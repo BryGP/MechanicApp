@@ -1,0 +1,55 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+Homestead.json
+Homestead.yaml
+# Additional common ignores
+.env.local
+/.vagrant
+/.cache
+/.sass-cache
+/.parcel-cache
+/.nyc_output
+
+# Node/npm/yarn logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build / artifacts / coverage
+/dist
+/build
+/coverage
+/public/build
+
+# Temp / logs
+/tmp
+/temp
+/logs
+
+# Laravel specific
+/storage/framework/*
+!/storage/framework/.gitignore
+
+# Other
+*.sqlite
+*.sql

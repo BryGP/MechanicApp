@@ -1,0 +1,48 @@
+# ---- comunes
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.swo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ---- envs
+.env
+.env.*.local
+
+# ---- frontend (Vite/Vue)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+frontend/.eslintcache
+
+# lockfiles (sí se suben)
+# frontend/package-lock.json -> SÍ
+# frontend/yarn.lock / pnpm-lock.yaml -> SÍ (si existieran)
+
+# ---- backend (Laravel)
+backend/vendor/
+backend/storage/*.key
+backend/storage/logs/*
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/testing/*
+backend/storage/framework/views/*
+backend/node_modules/
+backend/public/storage
+backend/.phpunit.result.cache
+
+# lockfiles/composer (sí se suben)
+# backend/composer.lock -> SÍ
+
+# ---- sistema
+.idea/
+!.gitignore

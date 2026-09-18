@@ -10,7 +10,7 @@ class StockCriticoReport
             'id'          => 'stock_critico',
             'title'       => 'Semáforo de Stock Crítico y Compras',
             'category'    => 'Inventario',
-            'icon'        => '⚠️',
+            'icon'        => 'alert',
             'description' => 'Detecta refacciones agotadas o por debajo del stock mínimo y calcula cuántas piezas pedir al proveedor.',
             'query'       => "
                 SELECT 

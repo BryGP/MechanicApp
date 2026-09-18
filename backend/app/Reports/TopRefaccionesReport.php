@@ -10,7 +10,7 @@ class TopRefaccionesReport
             'id'          => 'top_refacciones',
             'title'       => 'Refacciones Más Demandadas en Bahías',
             'category'    => 'Ventas',
-            'icon'        => '🔥',
+            'icon'        => 'revenue',
             'description' => 'Ranking de piezas con mayor rotación en el taller, en cuántas órdenes aparecen y total recaudado.',
             'query'       => "
                 SELECT 

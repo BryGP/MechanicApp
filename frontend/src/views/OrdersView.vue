@@ -34,20 +34,27 @@
                   class="btn-icon"
                   @click="openDetail(o)"
                   title="Ver refacciones y detalles del servicio"
-                >&#128065;</button>
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
                 <button
                   class="btn-icon del"
                   @click="removeOrder(o)"
-                  :title="confirmDelete?.id === o.id ? 'Confirmar eliminacion' : 'Eliminar'"
+                  :title="confirmDelete?.id === o.id ? 'Confirmar eliminación' : 'Eliminar'"
                   :style="confirmDelete?.id === o.id ? 'background:var(--danger-glow);opacity:1;color:var(--danger)' : ''"
-                >{{ confirmDelete?.id === o.id ? '?' : '&#128465;' }}</button>
+                >
+                  <span v-if="confirmDelete?.id === o.id" style="font-size:0.75rem;font-weight:700">OK?</span>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
       <div class="empty-state" v-else>
-        <div class="icon">&#128203;</div>
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:36px;height:36px"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+        </div>
         <p>No hay ordenes de servicio. Crea la primera.</p>
       </div>
     </div>

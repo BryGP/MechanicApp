@@ -1,8 +1,8 @@
-﻿<template>
+<template>
   <div class="shell">
     <Sidebar :collapsed="collapsed" @toggle="collapsed = !collapsed" />
     <div class="main" :class="{ 'main--sm': collapsed }">
-      <AppHeader @toggle="collapsed = !collapsed" />
+      <AppHeader />
       <main class="content">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
@@ -28,7 +28,7 @@ const collapsed = ref(false)
 .main {
   flex: 1; display: flex; flex-direction: column; overflow: hidden;
   margin-left: var(--sidebar-w);
-  transition: margin-left var(--transition);
+  transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .main--sm { margin-left: var(--sidebar-sm); }
 .content { flex: 1; overflow-y: auto; padding: 2rem; }

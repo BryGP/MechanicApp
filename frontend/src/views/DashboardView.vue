@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <div class="page-header">
       <div>
@@ -9,10 +9,10 @@
 
     <!-- Stat cards -->
     <div class="stats-grid">
-      <StatCard icon="&#128230;" label="Productos en inventario" :value="store.products.length" color="var(--blue)" />
-      <StatCard icon="&#9888;" label="Alertas de stock bajo" :value="store.lowStockProducts.length" color="var(--danger)" />
-      <StatCard icon="&#128203;" label="Ordenes activas" :value="store.openOrders.length" color="var(--accent)" />
-      <StatCard icon="&#128176;" label="Total recaudado" :value="'$' + store.totalRevenue.toFixed(2)" color="var(--success)" />
+      <StatCard icon="box" label="Productos en inventario" :value="store.products.length" color="var(--blue)" />
+      <StatCard icon="alert" label="Alertas de stock bajo" :value="store.lowStockProducts.length" color="var(--danger)" />
+      <StatCard icon="orders" label="Ordenes activas" :value="store.openOrders.length" color="var(--accent)" />
+      <StatCard icon="revenue" label="Total recaudado" :value="'$' + store.totalRevenue.toFixed(2)" color="var(--success)" />
     </div>
 
     <div class="dash-grid">
@@ -39,8 +39,10 @@
           </tbody>
         </table>
         <div class="empty-state" v-else>
-          <div class="icon">&#128203;</div>
-          <p>No hay ordenes aun. <router-link to="/ordenes">Crea una</router-link></p>
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:36px;height:36px"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+          </div>
+          <p>No hay ordenes activas. <router-link to="/ordenes">Crear una orden</router-link></p>
         </div>
       </div>
 
@@ -60,8 +62,10 @@
           </div>
         </div>
         <div class="empty-state" v-else>
-          <div class="icon">&#9989;</div>
-          <p>Todo el inventario esta en niveles normales</p>
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:36px;height:36px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <p>Todo el inventario está en niveles óptimos</p>
         </div>
       </div>
     </div>
@@ -89,6 +93,18 @@ const recentOrders = computed(() => store.orders.slice(0, 5))
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
 .section-title { font-size: 0.9rem; font-weight: 700; }
 .low-stock-list { display: flex; flex-direction: column; gap: 10px; }
-.low-stock-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: var(--bg-hover); border-radius: var(--radius-sm); }
+.low-stock-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: transform 0.2s var(--ease-spring), border-color 0.2s ease, background 0.2s ease;
+}
+.low-stock-item:hover {
+  border-color: rgba(148, 163, 184, 0.25);
+  transform: translateX(3px);
+  background: #192748;
+}
 @media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
 </style>

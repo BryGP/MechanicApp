@@ -126,10 +126,10 @@ export const useStore = defineStore('main', {
       await this.fetchExpenses()
     },
 
-    // Reports & SQL Templates
-    async fetchReportTemplates() {
+    // Reports Engine (Auto-discovery en app/Reports)
+    async fetchReports() {
       try {
-        const res = await fetch(`${base}/reports/templates`)
+        const res = await fetch(`${base}/reports`)
         if (res.ok) {
           this.reportTemplates = await res.json()
         }
@@ -137,27 +137,11 @@ export const useStore = defineStore('main', {
         this.reportTemplates = []
       }
     },
-    async createReportTemplate(data) {
-      const res = await fetch(`${base}/reports/templates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
+    async runReport(id) {
+      const res = await fetch(`${base}/reports/${id}/run`)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.message || 'Error al guardar plantilla')
-      }
-      await this.fetchReportTemplates()
-    },
-    async executeSqlReport(sql_query) {
-      const res = await fetch(`${base}/reports/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sql_query }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.message || 'Error al ejecutar consulta SQL')
+        throw new Error(err.message || 'Error al ejecutar reporte')
       }
       return await res.json()
     },

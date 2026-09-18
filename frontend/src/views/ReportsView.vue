@@ -2,96 +2,118 @@
   <div>
     <div class="page-header">
       <div>
-        <h2 class="page-title">Centro de Reportería & SQL</h2>
-        <p class="page-subtitle">Métricas gerenciales y ejecutor interactivo de plantillas personalizadas en MySQL</p>
+        <h2 class="page-title">Centro de Reportería</h2>
+        <p class="page-subtitle">Detección automática de consultas SQL y analítica gerencial del taller</p>
       </div>
       <div class="tabs-nav">
         <button
           class="tab-btn"
-          :class="{ active: activeTab === 'templates' }"
-          @click="activeTab = 'templates'"
+          :class="{ active: activeTab === 'reports' }"
+          @click="activeTab = 'reports'"
         >
-          ⚡ Plantillas & Consultas MySQL
+          Reportes Disponibles ({{ reports.length }})
         </button>
         <button
           class="tab-btn"
           :class="{ active: activeTab === 'executive' }"
           @click="activeTab = 'executive'"
         >
-          📊 Reportes Ejecutivos
+          Resumen Ejecutivo
         </button>
       </div>
     </div>
 
-    <!-- TAB 1: PLANTILLAS SQL INTERACTIVAS -->
-    <div v-if="activeTab === 'templates'">
-      <div class="card" style="margin-bottom: 1.5rem">
-        <div class="section-header">
-          <div>
-            <h3 style="font-size: 1.05rem; font-weight: 700">Hub de Plantillas MySQL</h3>
-            <p class="text-muted" style="font-size: 0.85rem">
-              Selecciona una plantilla predefinida o escribe tu propia consulta para ejecutarla en XAMPP
-            </p>
+    <!-- TAB 1: CATÁLOGO DE REPORTES AUTO-DETECTADOS -->
+    <div v-if="activeTab === 'reports'">
+      <!-- Grid de Tarjetas de Reportes -->
+      <div class="reports-grid" style="margin-bottom: 1.5rem">
+        <div
+          v-for="r in reports"
+          :key="r.id"
+          class="report-card"
+          :class="{ 'report-card--active': activeReport?.id === r.id }"
+          @click="selectAndRunReport(r)"
+        >
+          <div class="report-header">
+            <div class="report-icon">
+              <svg v-if="r.category === 'Inventario'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="card-svg">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+              </svg>
+              <svg v-else-if="r.category === 'Ventas'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="card-svg">
+                <line x1="18" y1="20" x2="18" y2="10"/>
+                <line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="card-svg">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </div>
+            <span class="report-cat-badge">{{ r.category || 'General' }}</span>
           </div>
-          <button class="btn btn-ghost btn-sm" @click="openNewTemplateModal">+ Guardar Nueva Plantilla</button>
-        </div>
-
-        <!-- Selector de plantillas -->
-        <div class="form-row" style="margin-bottom: 1rem">
-          <div class="form-group" style="flex: 2">
-            <label class="form-label">Plantilla de Reporte</label>
-            <select v-model="selectedTemplateId" @change="onSelectTemplate" class="form-select">
-              <option v-for="t in allTemplates" :key="t.id" :value="t.id">
-                [{{ t.category.toUpperCase() }}] {{ t.title }}
-              </option>
-            </select>
+          <h3 class="report-title">{{ r.title }}</h3>
+          <p class="report-desc">{{ r.description }}</p>
+          <div class="report-footer">
+            <code class="report-file">{{ r.file }}</code>
+            <button class="btn btn-primary btn-sm" :disabled="loadingReportId === r.id">
+              {{ loadingReportId === r.id ? 'Generando...' : 'Generar' }}
+            </button>
           </div>
-        </div>
-
-        <p v-if="currentTemplate?.description" class="template-desc">
-          &#128161; <strong>Objetivo:</strong> {{ currentTemplate.description }}
-        </p>
-
-        <!-- Editor SQL -->
-        <div class="sql-editor-container">
-          <div class="editor-header">
-            <span>CONSULTA SQL</span>
-            <button class="copy-btn" @click="copySql" title="Copiar consulta SQL">&#128203; Copiar</button>
-          </div>
-          <textarea
-            v-model="sqlQuery"
-            class="sql-textarea"
-            rows="7"
-            spellcheck="false"
-            placeholder="SELECT * FROM products..."
-          ></textarea>
-        </div>
-
-        <div class="editor-footer">
-          <span class="text-muted" style="font-size: 0.8rem">
-            Se ejecuta directamente en el motor MySQL de XAMPP (modo solo lectura SELECT).
-          </span>
-          <button class="btn btn-primary" @click="executeCurrentQuery" :disabled="executing">
-            {{ executing ? 'Ejecutando en MySQL...' : '⚡ Ejecutar Plantilla en MySQL' }}
-          </button>
-        </div>
-
-        <!-- Error banner si falla -->
-        <div v-if="queryError" class="error-banner">
-          ⚠️ <strong>Error en MySQL:</strong> {{ queryError }}
         </div>
       </div>
 
-      <!-- Resultados dinámicos de la consulta -->
-      <div class="card" style="padding:0" v-if="queryResults">
-        <div class="results-header">
-          <div style="font-size:0.95rem;font-weight:700">
-            Resultados de la consulta ({{ queryResults.length }} registros)
+      <!-- Estado si no hay reportes en la carpeta -->
+      <div class="card" v-if="!reports.length && !loadingReports">
+        <div class="empty-state">
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:36px;height:36px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </div>
-          <button class="btn btn-ghost btn-sm" @click="exportJson">&#128190; Copiar JSON</button>
+          <p>No se encontraron reportes en <code>backend/app/Reports/</code></p>
+          <p class="text-muted" style="font-size: 0.85rem">
+            Crea un archivo como <code>StockCriticoReport.php</code> en esa carpeta para que aparezca aquí automáticamente.
+          </p>
+        </div>
+      </div>
+
+      <!-- Visor de Resultados del Reporte Activo -->
+      <div class="card" style="padding:0" v-if="activeResult">
+        <div class="results-header">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="active-report-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              </div>
+              <div>
+                <h3 style="font-size:1.05rem;font-weight:700">{{ activeResult.report?.title }}</h3>
+                <p class="text-muted" style="font-size:0.8rem">
+                  {{ activeResult.count }} registros encontrados | Archivo: <code>{{ activeReport?.file }}</code>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" @click="showSqlModal = !showSqlModal">
+              {{ showSqlModal ? 'Ocultar SQL' : 'Ver SQL' }}
+            </button>
+            <button class="btn btn-ghost btn-sm" @click="exportJson">Copiar JSON</button>
+          </div>
         </div>
 
-        <div class="table-responsive" v-if="queryResults.length">
+        <!-- Cuadro desplegable de la consulta SQL ejecutada -->
+        <transition name="sql-slide">
+          <div v-if="showSqlModal" class="sql-box">
+            <div class="sql-box-header">CONSULTA SQL EJECUTADA EN MYSQL:</div>
+            <pre><code>{{ activeResult.report?.query }}</code></pre>
+          </div>
+        </transition>
+
+        <!-- Tabla dinámica -->
+        <div class="table-responsive" v-if="activeResult.data?.length">
           <table class="data-table">
             <thead>
               <tr>
@@ -99,7 +121,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, rIdx) in queryResults" :key="rIdx">
+              <tr v-for="(row, rIdx) in activeResult.data" :key="rIdx">
                 <td v-for="col in resultColumns" :key="col">
                   {{ row[col] !== null ? row[col] : '—' }}
                 </td>
@@ -113,23 +135,23 @@
       </div>
     </div>
 
-    <!-- TAB 2: REPORTES EJECUTIVOS VISUALES -->
+    <!-- TAB 2: RESUMEN EJECUTIVO -->
     <div v-if="activeTab === 'executive'">
       <div class="stats-grid">
         <StatCard
-          icon="&#127991;"
+          icon="tag"
           label="Valor del Almacén en Piezas"
           :value="'$' + inventoryValuation.toFixed(2)"
           color="var(--blue)"
         />
         <StatCard
-          icon="&#128295;"
+          icon="box"
           label="Total Refacciones en Stock"
           :value="totalUnitsInStock"
           color="var(--success)"
         />
         <StatCard
-          icon="&#128176;"
+          icon="revenue"
           label="Ticket Promedio por Servicio"
           :value="'$' + averageTicket.toFixed(2)"
           color="var(--accent)"
@@ -182,44 +204,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Modal Guardar Nueva Plantilla -->
-    <Modal v-model="showTemplateModal" title="Guardar Nueva Plantilla SQL">
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Título del reporte *</label>
-          <input v-model="newTemplate.title" class="form-input" placeholder="Ej. Margen por tipo de vehículo" />
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Categoría *</label>
-            <select v-model="newTemplate.category" class="form-select">
-              <option value="inventario">Inventario</option>
-              <option value="ventas">Ventas y Órdenes</option>
-              <option value="contabilidad">Contabilidad</option>
-              <option value="operaciones">Operaciones</option>
-            </select>
-          </div>
-          <div class="form-group" style="flex:2">
-            <label class="form-label">Descripción breve</label>
-            <input v-model="newTemplate.description" class="form-input" placeholder="Para qué sirve este reporte..." />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Consulta SQL (SELECT) *</label>
-          <textarea
-            v-model="newTemplate.sql_query"
-            class="sql-textarea"
-            rows="6"
-            placeholder="SELECT ... FROM ..."
-          ></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" @click="showTemplateModal = false">Cancelar</button>
-        <button class="btn btn-primary" @click="saveCustomTemplate">Guardar plantilla</button>
-      </div>
-    </Modal>
   </div>
 </template>
 
@@ -229,184 +213,55 @@ import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
 import StatCard from '../components/ui/StatCard.vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
-import Modal from '../components/ui/Modal.vue'
 
 const store = useStore()
 const toast = useToast()
 
-const activeTab = ref('templates')
-const executing = ref(false)
-const queryError = ref(null)
-const queryResults = ref(null)
-const showTemplateModal = ref(false)
-
-// Plantillas SQL maestras precargadas para taller automotriz
-const defaultTemplates = [
-  {
-    id: 'crit-stock',
-    title: 'Semáforo de stock crítico y piezas sugeridas a comprar',
-    category: 'inventario',
-    description: 'Calcula qué refacciones están agotadas o en nivel bajo y cuántas piezas se deben pedir al proveedor.',
-    sql_query: `SELECT 
-    sku,
-    name AS producto,
-    stock AS stock_actual,
-    min_stock AS stock_minimo,
-    CASE 
-        WHEN stock = 0 THEN 'AGOTADO'
-        WHEN stock <= min_stock THEN 'STOCK CRITICO'
-        ELSE 'OK'
-    END AS semaforo,
-    CASE 
-        WHEN stock <= min_stock THEN (min_stock - stock) + 5
-        ELSE 0
-    END AS sugerido_comprar
-FROM products
-ORDER BY stock ASC;`,
-  },
-  {
-    id: 'top-parts',
-    title: 'Top refacciones más utilizadas y recaudación generada',
-    category: 'ventas',
-    description: 'Muestra las refacciones con mayor demanda en el taller, en cuántas órdenes aparecen y el total ingresado.',
-    sql_query: `SELECT 
-    p.sku,
-    p.name AS refaccion,
-    COUNT(DISTINCT oi.order_id) AS ordenes_en_que_aparece,
-    SUM(oi.quantity) AS total_piezas_usadas,
-    SUM(oi.subtotal) AS ingreso_generado
-FROM products p
-INNER JOIN order_items oi ON p.id = oi.product_id
-GROUP BY p.id, p.sku, p.name
-ORDER BY total_piezas_usadas DESC;`,
-  },
-  {
-    id: 'dormant-parts',
-    title: 'Refacciones dormidas sin rotación (Capital estancado)',
-    category: 'inventario',
-    description: 'Detecta piezas que tienes en almacén pero nunca se han instalado en ninguna orden de servicio.',
-    sql_query: `SELECT 
-    p.sku,
-    p.name AS refaccion_sin_movimiento,
-    p.stock AS piezas_paradas,
-    p.price AS precio_unitario,
-    ROUND(p.stock * p.price, 2) AS dinero_estancado
-FROM products p
-WHERE NOT EXISTS (
-    SELECT 1 FROM order_items oi WHERE oi.product_id = p.id
-)
-ORDER BY dinero_estancado DESC;`,
-  },
-  {
-    id: 'order-ranking',
-    title: 'Ranking de órdenes por importe y porcentaje del taller',
-    category: 'ventas',
-    description: 'Ránking de vehículos reparados con cálculo analítico del porcentaje que representa del total del taller.',
-    sql_query: `SELECT 
-    o.id AS orden_id,
-    o.customer_name AS cliente,
-    o.status AS estatus,
-    o.total AS monto_orden,
-    ROUND((o.total / (SELECT SUM(total) FROM orders)) * 100, 2) AS pct_del_total_taller,
-    DENSE_RANK() OVER (ORDER BY o.total DESC) AS ranking
-FROM orders o
-ORDER BY ranking ASC;`,
-  },
-  {
-    id: 'consolidated-repairs',
-    title: 'Reporte integral de diagnósticos con refacciones consolidadas',
-    category: 'operaciones',
-    description: 'Muestra cada vehículo con la lista concatenada de piezas instaladas en una sola fila utilizando GROUP_CONCAT.',
-    sql_query: `SELECT 
-    o.id AS orden_id,
-    o.customer_name AS cliente,
-    o.vehicle AS vehiculo_diagnostico,
-    o.status AS estatus,
-    COUNT(oi.id) AS tipos_de_refaccion,
-    SUM(oi.quantity) AS total_piezas_instaladas,
-    o.total AS costo_total_orden,
-    GROUP_CONCAT(CONCAT(oi.quantity, 'x ', p.name, ' ($', oi.subtotal, ')') SEPARATOR ' | ') AS refacciones_utilizadas
-FROM orders o
-INNER JOIN order_items oi ON o.id = oi.order_id
-INNER JOIN products p ON oi.product_id = p.id
-GROUP BY o.id, o.customer_name, o.vehicle, o.status, o.total
-ORDER BY o.id DESC;`,
-  },
-  {
-    id: 'kpi-summary',
-    title: 'Tablero ejecutivo de KPIs del taller en una fila',
-    category: 'contabilidad',
-    description: 'Resumen gerencial consolidado: órdenes activas, terminadas, facturación total y ticket promedio.',
-    sql_query: `SELECT 
-    COUNT(id) AS total_ordenes_historicas,
-    SUM(CASE WHEN status IN ('open', 'in_progress') THEN 1 ELSE 0 END) AS vehiculos_en_taller_activos,
-    SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS listos_para_entrega,
-    SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS entregados,
-    ROUND(SUM(total), 2) AS facturacion_bruta_total,
-    ROUND(AVG(total), 2) AS ticket_promedio_por_auto,
-    ROUND(MAX(total), 2) AS orden_mas_costosa,
-    ROUND(MIN(total), 2) AS orden_mas_economica
-FROM orders;`,
-  },
-]
-
-const customTemplates = ref([])
-const allTemplates = computed(() => [...defaultTemplates, ...customTemplates.value])
-const selectedTemplateId = ref('crit-stock')
-const currentTemplate = computed(() => allTemplates.value.find((t) => t.id === selectedTemplateId.value))
-const sqlQuery = ref(defaultTemplates[0].sql_query)
-
-const newTemplate = ref({
-  title: '',
-  category: 'ventas',
-  description: '',
-  sql_query: '',
-})
+const activeTab = ref('reports')
+const loadingReports = ref(false)
+const loadingReportId = ref(null)
+const reports = ref([])
+const activeReport = ref(null)
+const activeResult = ref(null)
+const showSqlModal = ref(false)
 
 onMounted(async () => {
   await store.fetchProducts()
   await store.fetchOrders()
-  try {
-    await store.fetchReportTemplates()
-    if (store.reportTemplates && store.reportTemplates.length) {
-      customTemplates.value = store.reportTemplates
-    }
-  } catch {
-    // Si aún no está listo el endpoint del backend, se usan las plantillas maestras locales
-  }
+  await loadReportsList()
 })
 
-function onSelectTemplate() {
-  if (currentTemplate.value) {
-    sqlQuery.value = currentTemplate.value.sql_query
-    queryError.value = null
+async function loadReportsList() {
+  loadingReports.value = true
+  try {
+    await store.fetchReports()
+    reports.value = store.reportTemplates
+    if (reports.value.length && !activeReport.value) {
+      await selectAndRunReport(reports.value[0])
+    }
+  } catch (err) {
+    toast.error('Error al detectar reportes en backend')
+  } finally {
+    loadingReports.value = false
   }
 }
 
-function copySql() {
-  navigator.clipboard.writeText(sqlQuery.value)
-  toast.success('Consulta copiada al portapapeles')
-}
-
-async function executeCurrentQuery() {
-  if (!sqlQuery.value.trim()) return toast.error('Ingresa una consulta SQL para ejecutar')
-  executing.value = true
-  queryError.value = null
+async function selectAndRunReport(r) {
+  activeReport.value = r
+  loadingReportId.value = r.id
   try {
-    const res = await store.executeSqlReport(sqlQuery.value)
-    queryResults.value = res.data || res
-    toast.success('Consulta ejecutada con éxito')
+    const data = await store.runReport(r.id)
+    activeResult.value = data
   } catch (err) {
-    queryError.value = err.message
-    toast.error('Error al ejecutar la consulta en MySQL')
+    toast.error(err.message || 'Error al ejecutar reporte')
   } finally {
-    executing.value = false
+    loadingReportId.value = null
   }
 }
 
 const resultColumns = computed(() => {
-  if (!queryResults.value || !queryResults.value.length) return []
-  return Object.keys(queryResults.value[0])
+  if (!activeResult.value?.data || !activeResult.value.data.length) return []
+  return Object.keys(activeResult.value.data[0])
 })
 
 function formatColName(name) {
@@ -414,40 +269,12 @@ function formatColName(name) {
 }
 
 function exportJson() {
-  if (!queryResults.value) return
-  navigator.clipboard.writeText(JSON.stringify(queryResults.value, null, 2))
-  toast.success('JSON copiado al portapapeles')
+  if (!activeResult.value?.data) return
+  navigator.clipboard.writeText(JSON.stringify(activeResult.value.data, null, 2))
+  toast.success('Datos exportados al portapapeles en formato JSON')
 }
 
-function openNewTemplateModal() {
-  newTemplate.value = {
-    title: '',
-    category: 'ventas',
-    description: '',
-    sql_query: sqlQuery.value,
-  }
-  showTemplateModal.value = true
-}
-
-async function saveCustomTemplate() {
-  if (!newTemplate.value.title.trim() || !newTemplate.value.sql_query.trim()) {
-    return toast.error('Título y consulta SQL son requeridos')
-  }
-  try {
-    await store.createReportTemplate(newTemplate.value)
-    toast.success('Plantilla guardada en base de datos')
-  } catch {
-    // Fallback local
-    customTemplates.value.push({
-      id: 'custom-' + Date.now(),
-      ...newTemplate.value,
-    })
-    toast.success('Plantilla guardada localmente')
-  }
-  showTemplateModal.value = false
-}
-
-// Métricas ejecutivas computadas
+// Métricas ejecutivas
 const inventoryValuation = computed(() =>
   store.products.reduce((sum, p) => sum + parseFloat(p.price || 0) * (p.stock || 0), 0)
 )
@@ -524,87 +351,154 @@ const statusBreakdown = computed(() => {
   color: var(--text);
 }
 
-.template-desc {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 1rem;
-  background: var(--bg-hover);
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  border-left: 3px solid var(--accent);
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
 }
 
-.sql-editor-container {
-  background: #060a14;
+.report-card {
+  background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  margin-bottom: 1rem;
-}
-.editor-header {
+  border-radius: var(--radius);
+  padding: 1.25rem;
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
-  padding: 6px 12px;
-  background: #090e1c;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-}
-.copy-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.75rem;
   cursor: pointer;
-}
-.copy-btn:hover {
-  color: var(--text);
+  transition: all var(--transition);
 }
 
-.sql-textarea {
-  width: 100%;
-  padding: 12px;
-  background: transparent;
-  border: none;
-  color: #7dd3fc;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  outline: none;
-  resize: vertical;
+.report-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
 }
 
-.editor-footer {
+.report-card--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  background: #111a33;
+}
+
+.report-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
 }
 
-.error-banner {
-  margin-top: 1rem;
-  padding: 10px 14px;
-  background: #2f0911;
-  color: #f87171;
-  border: 1px solid #dc2626;
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+.report-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: #0b1e38;
+  color: #60a5fa;
+  border: 1px solid #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-svg {
+  width: 20px;
+  height: 20px;
+}
+
+.active-report-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #0b1e38;
+  color: #60a5fa;
+  border: 1px solid #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-cat-badge {
+  padding: 2px 9px;
+  background: #0b1e38;
+  color: #60a5fa;
+  border: 1px solid #2563eb;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.report-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.report-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 1rem;
+  flex-grow: 1;
+}
+
+.report-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+  gap: 8px;
+}
+
+.report-file {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--bg-hover);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.25rem;
+  padding: 1.25rem;
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sql-box {
+  background: #050811;
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.25rem;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: #7dd3fc;
+  overflow-x: auto;
+}
+
+.sql-slide-enter-active, .sql-slide-leave-active {
+  transition: opacity 0.22s var(--ease-spring), transform 0.22s var(--ease-spring);
+}
+.sql-slide-enter-from, .sql-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.sql-box-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
 }
 
 .table-responsive {
-  max-height: 450px;
+  max-height: 500px;
   overflow: auto;
 }
 
@@ -614,16 +508,19 @@ const statusBreakdown = computed(() => {
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
+
 .dash-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
 }
+
 .status-summary-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
+
 .status-row {
   display: flex;
   justify-content: space-between;

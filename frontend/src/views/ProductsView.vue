@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <div class="page-header">
       <div>
@@ -7,7 +7,9 @@
       </div>
       <div class="toolbar">
         <div class="search-wrap">
-          <span class="search-ic">&#128269;</span>
+          <span class="search-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;display:block"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
           <input v-model="search" class="form-input" placeholder="Buscar por nombre o SKU..." style="width:260px" />
         </div>
         <button class="btn btn-primary" @click="openCreate">+ Nuevo producto</button>
@@ -30,20 +32,27 @@
             <td class="text-muted">{{ p.min_stock }}</td>
             <td>
               <div class="td-actions">
-                <button class="btn-icon edit" @click="openEdit(p)" title="Editar">&#9998;</button>
+                <button class="btn-icon edit" @click="openEdit(p)" title="Editar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
                 <button
                   class="btn-icon del"
                   @click="remove(p)"
                   :title="confirmDelete?.id === p.id ? 'Haz clic de nuevo para confirmar' : 'Eliminar'"
                   :style="confirmDelete?.id === p.id ? 'background:var(--danger-glow);opacity:1;color:var(--danger)' : ''"
-                >{{ confirmDelete?.id === p.id ? '?' : '&#128465;' }}</button>
+                >
+                  <span v-if="confirmDelete?.id === p.id" style="font-size:0.75rem;font-weight:700">OK?</span>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
       <div class="empty-state" v-else>
-        <div class="icon">&#128230;</div>
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:36px;height:36px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
         <p>{{ search ? 'Sin resultados para "' + search + '"' : 'No hay productos. Agrega el primero.' }}</p>
       </div>
     </div>

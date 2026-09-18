@@ -11,25 +11,25 @@
     <!-- Stat cards de flujo de caja -->
     <div class="stats-grid">
       <StatCard
-        icon="&#128176;"
+        icon="revenue"
         label="Ingresos por Servicios"
         :value="'$' + store.totalRevenue.toFixed(2)"
         color="var(--success)"
       />
       <StatCard
-        icon="&#128184;"
+        icon="expenses"
         label="Gastos Operativos"
         :value="'$' + store.totalExpenses.toFixed(2)"
         color="var(--danger)"
       />
       <StatCard
-        icon="&#128200;"
+        icon="profit"
         label="Utilidad Neta del Taller"
         :value="'$' + store.netProfit.toFixed(2)"
         color="var(--accent)"
       />
       <StatCard
-        icon="&#128202;"
+        icon="margin"
         label="Margen Operativo"
         :value="store.marginPct.toFixed(1) + '%'"
         color="var(--blue)"
@@ -41,7 +41,9 @@
       <div class="table-toolbar">
         <div class="toolbar-left">
           <div class="search-wrap">
-            <span class="search-ic">&#128269;</span>
+            <span class="search-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;display:block"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
             <input
               v-model="search"
               class="form-input"
@@ -96,7 +98,8 @@
                   :title="confirmDelete?.id === e.id ? 'Confirmar eliminación' : 'Eliminar'"
                   :style="confirmDelete?.id === e.id ? 'background:var(--danger-glow);opacity:1;color:var(--danger)' : ''"
                 >
-                  {{ confirmDelete?.id === e.id ? '?' : '&#128465;' }}
+                  <span v-if="confirmDelete?.id === e.id" style="font-size:0.75rem;font-weight:700">OK?</span>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
               </div>
             </td>
@@ -104,7 +107,9 @@
         </tbody>
       </table>
       <div class="empty-state" v-else>
-        <div class="icon">&#128184;</div>
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:36px;height:36px"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+        </div>
         <p>{{ search || selectedCategory ? 'No hay egresos con los filtros aplicados' : 'No hay gastos registrados aún. Agrega el primero.' }}</p>
       </div>
     </div>

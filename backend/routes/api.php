@@ -4,10 +4,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ReportController;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes — MechanicApp
+| API Routes  MechanicApp
 |--------------------------------------------------------------------------
 |
 | All routes defined here are automatically prefixed with /api by Laravel.
@@ -62,3 +63,5 @@ Route::get('/health', function () {
 */
 Route::apiResource('products', ProductController::class);
 Route::apiResource('orders', OrderController::class);
+Route::get('reports', [ReportController::class, 'index']);
+Route::get('reports/{id}/run', [ReportController::class, 'run']);

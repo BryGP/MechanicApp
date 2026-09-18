@@ -1,47 +1,78 @@
-# Frontend (Vue.js)
+# MechanicApp � Frontend
 
-Este directorio contiene un esqueleto básico de una aplicación web construida con **Vue 3**, administrada con **Pinia**, y configurada mediante **Vite**. La idea es proveer una interfaz moderna y responsiva para la gestión del taller.
+Vue 3 single-page application for the MechanicApp workshop management system.
+Built with Vite, Pinia for state management, and Vue Router for navigation.
 
-## Requisitos
+---
 
-- Node.js >= 18
-- npm (o Yarn)
-
-## Estructura
+## Directory Structure
 
 ```
 frontend/
-├── public/
-│   └── index.html
-├── src/
-│   ├── assets/
-│   ├── components/
-│   │   ├── Sidebar.vue
-│   │   ├── Dashboard.vue
-│   │   ├── OrdersList.vue
-│   │   └── ProductsCard.vue
-│   ├── router/
-│   │   └── index.js
-│   ├── store/
-│   │   └── index.js
-│   ├── App.vue
-│   └── main.js
-├── package.json
-└── vite.config.js
++-- src/
+�   +-- main.js                   # App entry point: registers Pinia + Router, mounts app
+�   +-- App.vue                   # Root layout: Sidebar + <router-view> content area
+�   +-- components/
+�   �   +-- Sidebar.vue           # Left nav: links to Products and Orders routes
+�   �   +-- ProductsView.vue      # Route /        � inventory list
+�   �   +-- OrdersView.vue        # Route /orders  � orders table + demo create
+�   �   +-- OrdersList.vue        # Alternative orders table (simpler, no items expanded)
+�   �   +-- Dashboard.vue         # Summary cards + recent orders table
+�   �   +-- ProductsCard.vue      # Reusable card component (title + description)
+�   +-- router/
+�   �   +-- index.js              # Route definitions: / and /orders
+�   +-- store/
+�       +-- index.js              # Pinia store: products[], orders[], fetch/create actions
++-- .env                          # VITE_API_URL=http://localhost:8000/api
++-- index.html                    # HTML shell with <div id="app">
++-- vite.config.js                # Vite config: Vue plugin, dev server port 5173
 ```
 
-## Instalación
+---
 
-1. Desde la carpeta `mechanic_app/frontend` ejecuta `npm install` para instalar las dependencias.
-2. Levanta el entorno de desarrollo con `npm run dev`. La aplicación se servirá en `http://localhost:5173` de forma predeterminada.
-3. Para generar una versión de producción ejecuta `npm run build`.
+## State Management (Pinia Store)
 
-## Descripción de archivos
+The single store (`useStore`) holds:
 
-- `public/index.html`: Archivo HTML principal donde se monta la aplicación. Contiene metaetiquetas y punto de montaje (`<div id="app">`).
-- `src/main.js`: Punto de entrada de Vue. Crea la aplicación, configura el router y el almacén (Pinia) y la monta en el DOM.
-- `src/App.vue`: Componente raíz que incluye la estructura general (sidebar + contenido dinámico).
-- `src/components`: Colección de componentes de interfaz reutilizables, como `Sidebar`, `Dashboard`, `OrdersList` y `ProductsCard`.
-- `src/router/index.js`: Define las rutas de la SPA y los componentes asociados a cada vista.
-- `src/store/index.js`: Configura el almacén central utilizando Pinia para gestionar el estado global (productos, órdenes, usuario, etc.).
-- `vite.config.js`: Configuración de Vite para compilar el proyecto.
+| State      | Type    | Description                              |
+|------------|---------|------------------------------------------|
+| `products` | Array   | All inventory products from the API      |
+| `orders`   | Array   | All service orders with their line items |
+
+Available actions:
+
+| Action           | HTTP Call              | Description                            |
+|------------------|------------------------|----------------------------------------|
+| `fetchProducts()`| GET /api/products      | Loads all products into state          |
+| `fetchOrders()`  | GET /api/orders        | Loads all orders (with items) into state |
+| `createOrder(p)` | POST /api/orders       | Creates a new order, then re-fetches   |
+
+---
+
+## Routes
+
+| Path      | Component     | Description                      |
+|-----------|---------------|----------------------------------|
+| `/`       | ProductsView  | Inventory list                   |
+| `/orders` | OrdersView    | Service orders + demo creation   |
+
+---
+
+## Environment Variables
+
+| Variable        | Description                          |
+|-----------------|--------------------------------------|
+| `VITE_API_URL`  | Base URL for all backend API requests |
+
+Default value: `http://localhost:8000/api`
+
+---
+
+## Dev Commands
+
+```bash
+npm install        # Install dependencies
+npm run dev        # Start Vite dev server at http://localhost:5173
+npm run build      # Build production bundle to dist/
+npm run serve      # Preview production build locally
+```

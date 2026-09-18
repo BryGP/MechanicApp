@@ -30,7 +30,7 @@ class OrderController extends Controller
      */
     public function index()
     {
-        return Order::with('items')->latest()->get();
+        return Order::with('items.product')->latest()->get();
     }
 
     /**
@@ -44,11 +44,11 @@ class OrderController extends Controller
      *   5. Update the order's total with the sum of all subtotals.
      *
      * If any step fails (e.g. product not found, DB error), the entire
-     * transaction is rolled back — no partial data is saved.
+     * transaction is rolled back â€” no partial data is saved.
      *
      * Expected request body (JSON):
      * {
-     *   "customer_name": "Juan Pérez",       // optional
+     *   "customer_name": "Juan PÃ©rez",       // optional
      *   "vehicle": "Civic 2015",             // optional
      *   "items": [
      *     { "product_id": 1, "qty": 2 },
@@ -89,7 +89,7 @@ class OrderController extends Controller
                 // Step 4: Create the order line item
                 $order->items()->create([
                     'product_id' => $product->id,
-                    'qty'        => $it['qty'],
+                    'quantity'   => $it['qty'],
                     'unit_price' => $unit,
                     'subtotal'   => $subtotal,
                 ]);

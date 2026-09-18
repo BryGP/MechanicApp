@@ -50,7 +50,8 @@ class ProductController extends Controller
             'min_stock' => 'nullable|integer|min:0',
         ]);
 
-        Product::create($data);
+        $product = Product::create($data);
+        return response()->json($product, 201);
     }
 
     /**
@@ -77,7 +78,7 @@ class ProductController extends Controller
 
     /**
      * Return a single product by ID.
-     * Currently not implemented — reserved for future detail view.
+     * Currently not implemented â€” reserved for future detail view.
      *
      * @param  Product  $product
      */

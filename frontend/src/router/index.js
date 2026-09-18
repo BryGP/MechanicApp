@@ -1,33 +1,19 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import ProductsView from '../components/ProductsView.vue';
-import OrdersView from '../components/OrdersView.vue';
+import { createRouter, createWebHistory } from 'vue-router'
+import DashboardView from '../views/DashboardView.vue'
+import ProductsView from '../views/ProductsView.vue'
+import OrdersView from '../views/OrdersView.vue'
+import AccountingView from '../views/AccountingView.vue'
+import ReportsView from '../views/ReportsView.vue'
 
-/**
- * Vue Router configuration — MechanicApp
- *
- * Uses HTML5 History Mode (createWebHistory) for clean URLs without hash (#).
- * The Vite dev server handles 404 fallback automatically in development.
- *
- * Routes:
- *   /         ? ProductsView  — inventory list
- *   /orders   ? OrdersView    — service orders list + creation
- */
 const routes = [
-  {
-    path: '/',
-    name: 'Products',
-    component: ProductsView,
-  },
-  {
-    path: '/orders',
-    name: 'Orders',
-    component: OrdersView,
-  },
-];
+  { path: '/',             name: 'Dashboard',  component: DashboardView },
+  { path: '/productos',    name: 'Products',   component: ProductsView },
+  { path: '/ordenes',      name: 'Orders',     component: OrdersView },
+  { path: '/contabilidad', name: 'Accounting', component: AccountingView },
+  { path: '/reportes',     name: 'Reports',    component: ReportsView },
+]
 
-const router = createRouter({
+export default createRouter({
   history: createWebHistory(),
   routes,
-});
-
-export default router;
+})

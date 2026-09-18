@@ -1,88 +1,165 @@
-import { defineStore } from 'pinia';
+import { defineStore } from 'pinia'
 
-/**
- * Main Pinia Store — useStore
- *
- * Central state manager for the MechanicApp frontend.
- * Holds and manages two core data collections:
- *   - products: workshop inventory items fetched from the API
- *   - orders:   service orders with their associated line items
- *
- * All API calls use the VITE_API_URL env variable as the base URL,
- * which points to the Laravel backend (default: http://localhost:8000/api).
- *
- * Usage in any component:
- *   import { useStore } from '../store';
- *   const store = useStore();
- */
-const base = import.meta.env.VITE_API_URL;
+const base = import.meta.env.VITE_API_URL
 
 export const useStore = defineStore('main', {
-  /**
-   * Reactive state — shared across all components that import this store.
-   */
   state: () => ({
-    /** @type {Array} List of all products from GET /api/products */
     products: [],
-    /** @type {Array} List of all orders (with items) from GET /api/orders */
     orders: [],
+    expenses: [],
+    reportTemplates: [],
   }),
 
+  getters: {
+    lowStockProducts: (s) => s.products.filter(p => p.stock <= p.min_stock),
+    openOrders: (s) => s.orders.filter(o => o.status === 'open' || o.status === 'in_progress'),
+    totalRevenue: (s) => s.orders.reduce((sum, o) => sum + parseFloat(o.total || 0), 0),
+    totalExpenses: (s) => s.expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0),
+    netProfit: (s) => {
+      const rev = s.orders.reduce((sum, o) => sum + parseFloat(o.total || 0), 0)
+      const exp = s.expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0)
+      return rev - exp
+    },
+    marginPct: (s) => {
+      const rev = s.orders.reduce((sum, o) => sum + parseFloat(o.total || 0), 0)
+      if (rev === 0) return 0
+      const exp = s.expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0)
+      return ((rev - exp) / rev) * 100
+    },
+  },
+
   actions: {
-    /**
-     * Fetch all inventory products from the API and update local state.
-     * Called on component mount by ProductsView and Dashboard.
-     */
     async fetchProducts() {
-      const res = await fetch(`${base}/products`);
-      this.products = await res.json();
+      const res = await fetch(`${base}/products`)
+      this.products = await res.json()
     },
-
-    /**
-     * Fetch all service orders (with their line items) from the API.
-     * Called on component mount by OrdersView, OrdersList, and Dashboard.
-     */
     async fetchOrders() {
-      const res = await fetch(`${base}/orders`);
-      this.orders = await res.json();
+      const res = await fetch(`${base}/orders`)
+      this.orders = await res.json()
     },
 
-    /**
-     * Create a new service order via POST /api/orders.
-     * The backend handles stock decrement and total calculation automatically.
-     *
-     * @param {Object} payload
-     * @param {string} payload.customer_name - Name of the vehicle owner
-     * @param {string} payload.vehicle       - Vehicle description (model, year, plates)
-     * @param {Array}  payload.items         - Line items: [{ product_id, qty }, ...]
-     *
-     * @returns {Object} The newly created order with its items
-     * @throws  {Error}  If the API returns a non-2xx response
-     *
-     * Example:
-     *   await store.createOrder({
-     *     customer_name: 'Juan Pérez',
-     *     vehicle: 'Jetta 2018',
-     *     items: [{ product_id: 1, qty: 2 }]
-     *   });
-     */
+    // Products CRUD
+    async createProduct(data) {
+      const res = await fetch(`${base}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'Error al crear producto')
+      }
+      await this.fetchProducts()
+    },
+    async updateProduct(id, data) {
+      const res = await fetch(`${base}/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error('Error al actualizar producto')
+      await this.fetchProducts()
+    },
+    async deleteProduct(id) {
+      const res = await fetch(`${base}/products/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('No se puede eliminar: el producto tiene ordenes asociadas')
+      await this.fetchProducts()
+    },
+
+    // Orders CRUD
     async createOrder(payload) {
       const res = await fetch(`${base}/orders`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      });
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'Error al crear orden')
+      }
+      const created = await res.json()
+      await this.fetchOrders()
+      await this.fetchProducts()
+      return created
+    },
+    async updateOrderStatus(id, status) {
+      const res = await fetch(`${base}/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (!res.ok) throw new Error('Error al actualizar orden')
+      await this.fetchOrders()
+    },
+    async deleteOrder(id) {
+      const res = await fetch(`${base}/orders/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Error al eliminar orden')
+      await this.fetchOrders()
+    },
 
-      if (!res.ok) throw new Error('Failed to create order');
+    // Expenses / Accounting
+    async fetchExpenses() {
+      try {
+        const res = await fetch(`${base}/expenses`)
+        if (res.ok) {
+          this.expenses = await res.json()
+        }
+      } catch {
+        this.expenses = []
+      }
+    },
+    async createExpense(data) {
+      const res = await fetch(`${base}/expenses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'Error al registrar egreso')
+      }
+      await this.fetchExpenses()
+    },
+    async deleteExpense(id) {
+      const res = await fetch(`${base}/expenses/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Error al eliminar egreso')
+      await this.fetchExpenses()
+    },
 
-      const created = await res.json();
-
-      // Refresh the orders list to reflect the new entry
-      await this.fetchOrders();
-
-      return created;
+    // Reports & SQL Templates
+    async fetchReportTemplates() {
+      try {
+        const res = await fetch(`${base}/reports/templates`)
+        if (res.ok) {
+          this.reportTemplates = await res.json()
+        }
+      } catch {
+        this.reportTemplates = []
+      }
+    },
+    async createReportTemplate(data) {
+      const res = await fetch(`${base}/reports/templates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'Error al guardar plantilla')
+      }
+      await this.fetchReportTemplates()
+    },
+    async executeSqlReport(sql_query) {
+      const res = await fetch(`${base}/reports/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql_query }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'Error al ejecutar consulta SQL')
+      }
+      return await res.json()
     },
   },
-});
+})

@@ -47,7 +47,8 @@ export const useStore = defineStore('main', {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.message || 'Error al crear producto')
+        const msg = err.errors ? Object.values(err.errors).flat().join('. ') : (err.message || 'Error al crear producto')
+        throw new Error(msg)
       }
       await this.fetchProducts()
     },
@@ -57,7 +58,11 @@ export const useStore = defineStore('main', {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      if (!res.ok) throw new Error('Error al actualizar producto')
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        const msg = err.errors ? Object.values(err.errors).flat().join('. ') : (err.message || 'Error al actualizar producto')
+        throw new Error(msg)
+      }
       await this.fetchProducts()
     },
     async deleteProduct(id) {
@@ -75,7 +80,8 @@ export const useStore = defineStore('main', {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.message || 'Error al crear orden')
+        const msg = err.errors ? Object.values(err.errors).flat().join('. ') : (err.message || 'Error al crear orden')
+        throw new Error(msg)
       }
       const created = await res.json()
       await this.fetchOrders()
@@ -116,7 +122,8 @@ export const useStore = defineStore('main', {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.message || 'Error al registrar egreso')
+        const msg = err.errors ? Object.values(err.errors).flat().join('. ') : (err.message || 'Error al registrar egreso')
+        throw new Error(msg)
       }
       await this.fetchExpenses()
     },

@@ -79,6 +79,18 @@ class ExpenseController extends Controller
             'expense_date'   => 'required|date',
         ]);
 
+        // Prevención de duplicados exactos en contabilidad
+        $duplicate = Expense::where('concept', $validated['concept'])
+            ->where('amount', $validated['amount'])
+            ->where('expense_date', $validated['expense_date'])
+            ->exists();
+
+        if ($duplicate) {
+            return response()->json([
+                'message' => 'Ya existe un egreso registrado con este mismo concepto, monto y fecha contable.'
+            ], 422);
+        }
+
         $expense = Expense::create($validated);
 
         return response()->json($expense, 201);

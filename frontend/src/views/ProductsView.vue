@@ -341,9 +341,24 @@ function openEditProduct(p) {
 }
 
 async function saveProduct() {
-  if (!formProduct.value.name.trim() || !formProduct.value.sku.trim()) {
+  const name = formProduct.value.name.trim()
+  const sku = formProduct.value.sku.trim()
+  if (!name || !sku) {
     return toast.error('Nombre y SKU son requeridos')
   }
+
+  // Prevención proactiva de duplicados en el cliente
+  const editId = editingProduct.value?.id
+  const skuDupe = store.products.find(p => p.sku?.trim().toLowerCase() === sku.toLowerCase() && p.id !== editId)
+  if (skuDupe) {
+    return toast.error(`¡El SKU "${sku}" ya existe en el sistema! No se permiten duplicados.`)
+  }
+
+  const nameDupe = store.products.find(p => p.name?.trim().toLowerCase() === name.toLowerCase() && p.id !== editId)
+  if (nameDupe) {
+    return toast.error(`¡Ya existe una refacción registrada con el nombre "${name}"!`)
+  }
+
   loading.value = true
   try {
     if (editingProduct.value) {
@@ -382,9 +397,24 @@ function openEditService(s) {
 }
 
 async function saveService() {
-  if (!formService.value.name.trim() || !formService.value.sku.trim()) {
+  const name = formService.value.name.trim()
+  const sku = formService.value.sku.trim()
+  if (!name || !sku) {
     return toast.error('Nombre y Clave del servicio son requeridos')
   }
+
+  // Prevención proactiva de duplicados en el cliente
+  const editId = editingService.value?.id
+  const skuDupe = store.products.find(p => p.sku?.trim().toLowerCase() === sku.toLowerCase() && p.id !== editId)
+  if (skuDupe) {
+    return toast.error(`¡La clave/código "${sku}" ya está en uso por otro servicio o refacción!`)
+  }
+
+  const nameDupe = store.products.find(p => p.name?.trim().toLowerCase() === name.toLowerCase() && p.id !== editId)
+  if (nameDupe) {
+    return toast.error(`¡Ya existe un servicio registrado con el nombre "${name}"!`)
+  }
+
   loading.value = true
   try {
     if (editingService.value) {

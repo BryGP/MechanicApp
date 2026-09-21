@@ -91,6 +91,19 @@ class OrderController extends Controller
             'items.*.qty'          => 'required|integer|min:1',
         ]);
 
+        // Prevención de envíos duplicados inmediatos (doble clic)
+        if (!empty($data['customer_name']) || !empty($data['vehicle'])) {
+            $recentDupe = Order::where('customer_name', $data['customer_name'] ?? null)
+                ->where('vehicle', $data['vehicle'] ?? null)
+                ->where('created_at', '>=', now()->subSeconds(30))
+                ->first();
+            if ($recentDupe) {
+                return response()->json([
+                    'message' => 'Ya se registró una orden con este mismo cliente y vehículo hace unos momentos.'
+                ], 422);
+            }
+        }
+
         return DB::transaction(function () use ($data) {
             // Paso 1: Crear cabecera inicial de la orden de servicio
             $order = Order::create([

@@ -13,26 +13,26 @@
       <StatCard
         icon="revenue"
         label="Ingresos por Servicios"
-        :value="'$' + store.totalRevenue.toFixed(2)"
+        :value="formatCurrency(store.totalRevenue)"
         color="var(--success)"
       />
       <StatCard
         icon="expenses"
         label="Gastos Operativos"
-        :value="'$' + store.totalExpenses.toFixed(2)"
+        :value="formatCurrency(store.totalExpenses)"
         color="var(--danger)"
       />
       <StatCard
-        icon="profit"
-        label="Utilidad Neta del Taller"
-        :value="'$' + store.netProfit.toFixed(2)"
-        color="var(--accent)"
+        :icon="store.netProfit >= 0 ? 'profit' : 'expenses'"
+        :label="store.netProfit >= 0 ? 'Utilidad Neta del Taller' : 'Déficit / Pérdida Neta'"
+        :value="formatCurrency(store.netProfit)"
+        :color="store.netProfit >= 0 ? 'var(--success)' : 'var(--danger)'"
       />
       <StatCard
         icon="margin"
         label="Margen Operativo"
-        :value="store.marginPct.toFixed(1) + '%'"
-        color="var(--blue)"
+        :value="(store.marginPct >= 0 ? '+' : '') + store.marginPct.toFixed(1) + '%'"
+        :color="store.marginPct >= 0 ? 'var(--blue)' : 'var(--danger)'"
       />
     </div>
 
@@ -69,12 +69,12 @@
       <table class="data-table" v-if="filteredExpenses.length">
         <thead>
           <tr>
-            <th>Concepto</th>
-            <th>Categoría</th>
-            <th>Método</th>
-            <th>Folio/Ref</th>
-            <th>Fecha</th>
-            <th>Monto</th>
+            <SortableTh label="Concepto" field="concept" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+            <SortableTh label="Categoría" field="category" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+            <SortableTh label="Método" field="payment_method" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+            <SortableTh label="Folio/Ref" field="reference" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+            <SortableTh label="Fecha" field="expense_date" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+            <SortableTh label="Monto" field="amount" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
             <th>Acciones</th>
           </tr>
         </thead>
@@ -89,7 +89,7 @@
             <td><span class="pay-badge">{{ e.payment_method || 'efectivo' }}</span></td>
             <td><code>{{ e.reference || '—' }}</code></td>
             <td class="text-muted">{{ e.expense_date }}</td>
-            <td class="font-semibold text-danger">-${{ parseFloat(e.amount).toFixed(2) }}</td>
+            <td class="font-semibold text-danger">-{{ formatCurrency(e.amount) }}</td>
             <td>
               <div class="td-actions">
                 <button
@@ -186,6 +186,8 @@ import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
 import StatCard from '../components/ui/StatCard.vue'
 import Modal from '../components/ui/Modal.vue'
+import SortableTh from '../components/ui/SortableTh.vue'
+import { formatCurrency } from '../utils/format'
 
 const store = useStore()
 const toast = useToast()
@@ -197,9 +199,20 @@ onMounted(async () => {
 
 const search = ref('')
 const selectedCategory = ref('')
+const sortField = ref('expense_date')
+const sortOrder = ref('desc')
 const showModal = ref(false)
 const loading = ref(false)
 const confirmDelete = ref(null)
+
+function handleSort(field) {
+  if (sortField.value === field) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortOrder.value = field === 'expense_date' || field === 'amount' ? 'desc' : 'asc'
+  }
+}
 
 const today = new Date().toISOString().split('T')[0]
 const empty = () => ({
@@ -213,13 +226,33 @@ const empty = () => ({
 const form = ref(empty())
 
 const filteredExpenses = computed(() => {
-  const q = search.value.toLowerCase()
-  return store.expenses.filter((e) => {
+  const q = search.value.toLowerCase().trim()
+  let list = store.expenses.filter((e) => {
     const matchQ =
+      !q ||
       (e.concept && e.concept.toLowerCase().includes(q)) ||
       (e.reference && e.reference.toLowerCase().includes(q))
     const matchCat = !selectedCategory.value || e.category === selectedCategory.value
     return matchQ && matchCat
+  })
+
+  return list.sort((a, b) => {
+    let valA = a[sortField.value]
+    let valB = b[sortField.value]
+    if (sortField.value === 'amount') {
+      valA = parseFloat(valA || 0)
+      valB = parseFloat(valB || 0)
+      return sortOrder.value === 'asc' ? valA - valB : valB - valA
+    } else if (sortField.value === 'expense_date') {
+      const timeA = new Date(valA || 0).getTime()
+      const timeB = new Date(valB || 0).getTime()
+      return sortOrder.value === 'asc' ? timeA - timeB : timeB - timeA
+    } else {
+      valA = String(valA || '')
+      valB = String(valB || '')
+      const cmp = valA.localeCompare(valB, 'es', { numeric: true, sensitivity: 'base' })
+      return sortOrder.value === 'asc' ? cmp : -cmp
+    }
   })
 })
 

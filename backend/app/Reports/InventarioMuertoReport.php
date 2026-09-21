@@ -2,8 +2,38 @@
 
 namespace App\Reports;
 
+/**
+ * ============================================================================
+ * CLASE: InventarioMuertoReport (Reporte de Refacciones sin Rotación)
+ * ============================================================================
+ * 
+ * ¿QUÉ HACE ESTA CLASE?
+ * Identifica las piezas, fluidos y refacciones que tienen existencias en los 
+ * anaqueles pero que jamás han sido instaladas en ninguna orden de servicio.
+ * Es crucial para liquidar mercancía estancada y recuperar flujo de efectivo.
+ *
+ * LO MÁS NOVEDOSO / DESTACADO:
+ * - Detección por Anti-Join (LEFT JOIN ... WHERE oi.id IS NULL):
+ *   Aprovecha el índice foráneo de 'order_items.product_id' para aislar 
+ *   instantáneamente los productos con cero movimientos históricos de salida.
+ * - Cálculo de Capital Congelado:
+ *   Multiplica el stock estancado por su precio unitario para mostrar el dinero 
+ *   líquido exacto que el taller tiene retenido sin rentabilidad.
+ * ============================================================================
+ */
 class InventarioMuertoReport
 {
+    // =========================================================================
+    // SECCIÓN: DEFINICIÓN DE METADATOS Y SENTENCIA SQL ANALÍTICA
+    // =========================================================================
+
+    /**
+     * // Función para obtener la configuración y consulta de inventario muerto
+     * 
+     * Retorna los metadatos y la consulta SQL que detecta piezas sin ventas.
+     *
+     * @return array
+     */
     public static function info(): array
     {
         return [

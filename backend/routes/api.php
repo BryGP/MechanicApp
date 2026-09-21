@@ -5,63 +5,76 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
-
-/*
-|--------------------------------------------------------------------------
-| API Routes  MechanicApp
-|--------------------------------------------------------------------------
-|
-| All routes defined here are automatically prefixed with /api by Laravel.
-| They are stateless (no session/cookie) and return JSON responses.
-|
-| Auth: Currently open (no authentication middleware).
-|       Sanctum is installed and can be enabled per-route with:
-|       ->middleware('auth:sanctum')
-|
-*/
+use App\Http\Controllers\ExpenseController;
 
 /**
- * Auth check route (requires Sanctum token).
- * Returns the currently authenticated user object.
- * Not actively used by the frontend yet.
+ * ============================================================================
+ * ARCHIVO: routes/api.php (Enrutamiento Central de la API REST)
+ * ============================================================================
+ * 
+ * ¿QUÉ HACE ESTE ARCHIVO?
+ * Define todos los endpoints públicos y protegidos que conectan la interfaz Vue
+ * del frontend con el motor de base de datos MySQL y la lógica de negocio en Laravel.
+ *
+ * LO MÁS NOVEDOSO / DESTACADO:
+ * - Convenciones RESTful Limpias mediante 'Route::apiResource':
+ *   Genera automáticamente los estándares GET, POST, PUT y DELETE en una sola línea.
+ * - Endpoints Polimórficos de Reportería:
+ *   Las rutas '/reports/{id}/run' y '/reports/{id}/pdf' admiten cualquier ID de 
+ *   reporte descubierto en disco sin necesidad de definir una ruta para cada reporte.
+ * ============================================================================
  */
+
+// =========================================================================
+// SECCIÓN 1: SALUD DEL SISTEMA Y AUTENTICACIÓN
+// =========================================================================
+
+// Endpoint de verificación de usuario autenticado mediante Laravel Sanctum
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-/**
- * Health check endpoint.
- * Used to verify the API server is running and reachable.
- * Response: { "status": "ok" }
- */
+// Endpoint de monitoreo de disponibilidad y uptime (Health Check)
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
 
-/*
-|--------------------------------------------------------------------------
-| Resource Routes
-|--------------------------------------------------------------------------
-|
-| apiResource() generates 5 RESTful endpoints per resource (no create/edit
-| HTML form routes, since this is a pure API):
-|
-|  Products:
-|   GET    /api/products          ? ProductController@index
-|   POST   /api/products          ? ProductController@store
-|   GET    /api/products/{id}     ? ProductController@show
-|   PUT    /api/products/{id}     ? ProductController@update
-|   DELETE /api/products/{id}     ? ProductController@destroy
-|
-|  Orders:
-|   GET    /api/orders            ? OrderController@index
-|   POST   /api/orders            ? OrderController@store
-|   GET    /api/orders/{id}       ? OrderController@show
-|   PUT    /api/orders/{id}       ? OrderController@update
-|   DELETE /api/orders/{id}       ? OrderController@destroy
-|
-*/
+// =========================================================================
+// SECCIÓN 2: INVENTARIO DE REFACCIONES Y CATÁLOGO DE SERVICIOS
+// =========================================================================
+
+// CRUD completo para refacciones físicas y servicios de mano de obra
 Route::apiResource('products', ProductController::class);
+
+// =========================================================================
+// SECCIÓN 3: ÓRDENES DE SERVICIO Y DIAGNÓSTICO EN BAHÍAS
+// =========================================================================
+
+// Gestión del ciclo de vida de órdenes, cotizaciones y deducción de stock
 Route::apiResource('orders', OrderController::class);
-Route::get('reports', [ReportController::class, 'index']);
+
+// =========================================================================
+// SECCIÓN 4: MOTOR DE BUSINESS INTELLIGENCE Y REPORTES ANALÍTICOS
+// =========================================================================
+
+// Listado de reportes descubiertos automáticamente en 'app/Reports/'
+Route::get('reports',          [ReportController::class, 'index']);
+
+// Ejecución directa de consultas analíticas con respuesta tabular JSON
 Route::get('reports/{id}/run', [ReportController::class, 'run']);
+
+// Compilación y exportación de reportes a PDF apaisado ejecutivo
+Route::get('reports/{id}/pdf', [ReportController::class, 'pdf']);
+
+// =========================================================================
+// SECCIÓN 5: CONTABILIDAD, EGRESOS OPERATIVOS Y FLUJO DE CAJA
+// =========================================================================
+
+// Consulta cronológica de egresos del taller
+Route::get('expenses',              [ExpenseController::class, 'index']);
+
+// Registro de nuevos gastos categorizados con validación estricta
+Route::post('expenses',             [ExpenseController::class, 'store']);
+
+// Eliminación de partidas contables
+Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy']);

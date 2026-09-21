@@ -6,81 +6,131 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 
 /**
- * ProductController
+ * ============================================================================
+ * CLASE: ProductController
+ * ============================================================================
+ * 
+ * ¿QUÉ HACE ESTA CLASE?
+ * Administra el catálogo integral de refacciones físicas y servicios de taller.
+ * Coordina la creación, consulta, edición y eliminación de insumos, fluidos, 
+ * piezas mecánicas y paquetes de mano de obra (diagnósticos, afinaciones, etc.).
  *
- * Handles all CRUD operations for workshop inventory products.
- * Registered as an API resource route in routes/api.php, which maps
- * standard HTTP verbs to these methods automatically:
+ * LO MÁS NOVEDOSO / DESTACADO:
+ * - Soporte polimórfico híbrido para productos físicos vs. servicios ('is_service'):
+ *   Si el elemento es un servicio de taller, se neutraliza el control de inventario
+ *   (stock = 0, min_stock = 0), permitiendo cotizar mano de obra sin restricciones.
+ * - Validación inteligente de SKU único mediante exclusión de ID propio durante 
+ *   actualizaciones (PATCH/PUT), evitando falsos positivos de duplicidad.
+ * - Protección de integridad referencial: el sistema impide la eliminación
+ *   accidental de refacciones que ya pertenezcan a órdenes de servicio cerradas.
  *
- *   GET    /api/products          ? index()
- *   POST   /api/products          ? store()
- *   GET    /api/products/{id}     ? show()    (not implemented)
- *   PUT    /api/products/{id}     ? update()
- *   DELETE /api/products/{id}     ? destroy()
+ * MAPEO DE RUTAS (API Resource en routes/api.php):
+ * - GET    /api/products      -> index()   (Listar inventario completo)
+ * - POST   /api/products      -> store()   (Crear refacción o servicio)
+ * - GET    /api/products/{id} -> show()    (Detalle individual)
+ * - PUT    /api/products/{id} -> update()  (Actualización de campos)
+ * - DELETE /api/products/{id} -> destroy() (Baja de catálogo)
+ * ============================================================================
  */
 class ProductController extends Controller
 {
+    // =========================================================================
+    // SECCIÓN 1: CONSULTA Y LISTADO DE CATÁLOGO
+    // =========================================================================
+
     /**
-     * Return all products sorted alphabetically by name.
-     * Used by the frontend to populate the inventory list and
-     * the product picker when creating a new order.
+     * // Función para listar refacciones y servicios disponibles
+     * 
+     * Retorna la colección completa de productos y servicios ordenados 
+     * alfabéticamente por su nombre comercial para la carga fluida en frontend.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function index()
     {
         return Product::orderBy('name')->get();
     }
 
+    // =========================================================================
+    // SECCIÓN 2: ALTA DE PRODUCTOS Y DISCRIMINACIÓN DE SERVICIOS
+    // =========================================================================
+
     /**
-     * Create a new product in the inventory.
+     * // Función para registrar una nueva refacción física o servicio de taller
+     * 
+     * Evalúa las reglas de validación y discrimina si el registro corresponde a:
+     * 1. Una refacción física: almacena existencias y umbral mínimo de reabastecimiento.
+     * 2. Un servicio de mano de obra: fija existencias en 0 y marca la bandera 'is_service'.
      *
-     * Validation rules:
-     *   - name      : required, string, max 255 chars
-     *   - sku       : required, unique across products table
-     *   - price     : required, numeric, non-negative
-     *   - stock     : required, integer, non-negative
-     *   - min_stock : optional, integer (default threshold for low-stock alerts)
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'      => 'required|string|max:255',
-            'sku'       => 'required|string|max:255|unique:products,sku',
-            'price'     => 'required|numeric|min:0',
-            'stock'     => 'required|integer|min:0',
-            'min_stock' => 'nullable|integer|min:0',
+            'name'       => 'required|string|max:255',
+            'sku'        => 'required|string|max:255|unique:products,sku',
+            'price'      => 'required|numeric|min:0',
+            'stock'      => 'nullable|integer|min:0',
+            'min_stock'  => 'nullable|integer|min:0',
+            'is_service' => 'nullable|boolean',
         ]);
+
+        // Discriminación automática: los servicios no controlan inventario
+        if (!empty($data['is_service'])) {
+            $data['stock'] = 0;
+            $data['min_stock'] = 0;
+            $data['is_service'] = true;
+        } else {
+            $data['stock'] = $data['stock'] ?? 0;
+            $data['min_stock'] = $data['min_stock'] ?? 0;
+            $data['is_service'] = false;
+        }
 
         $product = Product::create($data);
         return response()->json($product, 201);
     }
 
+    // =========================================================================
+    // SECCIÓN 3: MODIFICACIÓN Y CONTROL DE PRECIOS/STOCK
+    // =========================================================================
+
     /**
-     * Update an existing product's attributes.
-     * All fields are optional (PATCH-style): only provided fields are updated.
-     * SKU uniqueness is validated while ignoring the current product's own SKU.
+     * // Función para actualizar datos de una refacción o servicio existente
+     * 
+     * Permite actualización parcial (estilo PATCH/PUT). Valida la unicidad del SKU
+     * ignorando el registro del propio producto que se está editando.
      *
-     * @param  Request  $request
-     * @param  Product  $product  Route-model binding resolves the product by ID
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Product       $product (Resuelto por Route Model Binding)
+     * @return \App\Models\Product
      */
     public function update(Request $request, Product $product)
     {
         $data = $request->validate([
-            'name'      => 'sometimes|string|max:255',
-            'sku'       => "sometimes|string|max:255|unique:products,sku,{$product->id}",
-            'price'     => 'sometimes|numeric|min:0',
-            'stock'     => 'sometimes|integer|min:0',
-            'min_stock' => 'sometimes|integer|min:0',
+            'name'       => 'sometimes|string|max:255',
+            'sku'        => "sometimes|string|max:255|unique:products,sku,{$product->id}",
+            'price'      => 'sometimes|numeric|min:0',
+            'stock'      => 'sometimes|integer|min:0',
+            'min_stock'  => 'sometimes|integer|min:0',
+            'is_service' => 'sometimes|boolean',
         ]);
 
         $product->update($data);
         return $product;
     }
 
+    // =========================================================================
+    // SECCIÓN 4: CONSULTA INDIVIDUAL Y RESERVAS DE INTERFAZ
+    // =========================================================================
+
     /**
-     * Return a single product by ID.
-     * Currently not implemented — reserved for future detail view.
+     * // Función para consultar el detalle de un solo producto
+     * 
+     * Reservada para futuras vistas detalladas o fichas técnicas de producto.
      *
-     * @param  Product  $product
+     * @param  \App\Models\Product  $product
+     * @return void
      */
     public function show(Product $product)
     {
@@ -88,22 +138,31 @@ class ProductController extends Controller
     }
 
     /**
-     * Show the form for editing a product.
-     * Not used in API-only mode (reserved for Blade/SSR if needed).
+     * // Función para renderizado de formulario de edición (Server-Side)
+     * 
+     * Reservada para renderizado tradicional en caso de requerir Blade en el futuro.
      *
-     * @param  Product  $product
+     * @param  \App\Models\Product  $product
+     * @return void
      */
     public function edit(Product $product)
     {
         //
     }
 
+    // =========================================================================
+    // SECCIÓN 5: ELIMINACIÓN DE CATÁLOGO Y PROTECCIÓN REFERENCIAL
+    // =========================================================================
+
     /**
-     * Permanently delete a product from the inventory.
-     * Note: deletion will fail if the product is referenced by any existing
-     * order item (enforced by DB foreign key with onDelete RESTRICT).
+     * // Función para eliminar definitivamente un producto o servicio
+     * 
+     * Ejecuta el borrado del registro. Si el producto ya fue utilizado en alguna
+     * orden de servicio previa, la base de datos restringe el borrado (RESTRICT)
+     * preservando la fidelidad histórica de las ventas.
      *
-     * @param  Product  $product
+     * @param  \App\Models\Product  $product
+     * @return \Illuminate\Http\JsonResponse
      */
     public function destroy(Product $product)
     {

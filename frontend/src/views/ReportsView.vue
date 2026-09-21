@@ -2,8 +2,8 @@
   <div>
     <div class="page-header">
       <div>
-        <h2 class="page-title">Centro de Reportería</h2>
-        <p class="page-subtitle">Detección automática de consultas SQL y analítica gerencial del taller</p>
+        <h2 class="page-title">Centro de Reportes</h2>
+        <p class="page-subtitle">Informes gerenciales, control operativo y analítica del taller</p>
       </div>
       <div class="tabs-nav">
         <button
@@ -11,7 +11,7 @@
           :class="{ active: activeTab === 'reports' }"
           @click="activeTab = 'reports'"
         >
-          Reportes Disponibles ({{ reports.length }})
+          Catálogo de Reportes ({{ reports.length }})
         </button>
         <button
           class="tab-btn"
@@ -23,7 +23,7 @@
       </div>
     </div>
 
-    <!-- TAB 1: CATÁLOGO DE REPORTES AUTO-DETECTADOS -->
+    <!-- TAB 1: CATÁLOGO DE REPORTES -->
     <div v-if="activeTab === 'reports'">
       <!-- Grid de Tarjetas de Reportes -->
       <div class="reports-grid" style="margin-bottom: 1.5rem">
@@ -66,7 +66,7 @@
           <h3 class="report-title">{{ r.title }}</h3>
           <p class="report-desc">{{ r.description }}</p>
           <div class="report-footer">
-            <code class="report-file">{{ r.file }}</code>
+            <span class="report-tag">{{ r.category }}</span>
             <button class="btn btn-primary btn-sm" :disabled="loadingReportId === r.id">
               {{ loadingReportId === r.id ? 'Generando...' : 'Generar' }}
             </button>
@@ -74,15 +74,15 @@
         </div>
       </div>
 
-      <!-- Estado si no hay reportes en la carpeta -->
+      <!-- Estado si no hay reportes -->
       <div class="card" v-if="!reports.length && !loadingReports">
         <div class="empty-state">
           <div class="icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:36px;height:36px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </div>
-          <p>No se encontraron reportes en <code>backend/app/Reports/</code></p>
+          <p>No se encontraron reportes configurados en el sistema.</p>
           <p class="text-muted" style="font-size: 0.85rem">
-            Crea un archivo como <code>StockCriticoReport.php</code> en esa carpeta para que aparezca aquí automáticamente.
+            Los reportes se configuran en el catálogo del sistema para aparecer aquí automáticamente.
           </p>
         </div>
       </div>
@@ -91,33 +91,32 @@
       <div class="card" style="padding:0" v-if="activeResult">
         <div class="results-header">
           <div>
-            <div style="display:flex;align-items:center;gap:10px">
+            <div style="display:flex;align-items:center;gap:12px">
               <div class="active-report-badge">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               </div>
               <div>
                 <h3 style="font-size:1.05rem;font-weight:700">{{ activeResult.report?.title }}</h3>
-                <p class="text-muted" style="font-size:0.8rem">
-                  {{ activeResult.count }} registros encontrados | Archivo: <code>{{ activeReport?.file }}</code>
+                <p class="text-muted" style="font-size:0.8rem;margin-top:2px">
+                  {{ activeResult.count }} registros encontrados &bull; Categoría: <span class="font-semibold text-accent">{{ activeResult.report?.category }}</span>
                 </p>
               </div>
             </div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost btn-sm" @click="showSqlModal = !showSqlModal">
-              {{ showSqlModal ? 'Ocultar SQL' : 'Ver SQL' }}
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn btn-ghost btn-sm" @click="exportData" title="Copiar tabla para pegar en Excel o Google Sheets">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              Copiar Datos
             </button>
-            <button class="btn btn-ghost btn-sm" @click="exportJson">Copiar JSON</button>
+            <a :href="`${apiBase}/reports/${activeReport.id}/pdf`" target="_blank" class="btn btn-primary btn-sm" v-if="activeReport">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8 17v-2h8v2H8zm0-4v-2h8v2H8zm0-4V7h5v2H8z"/></svg>
+              Descargar PDF
+            </a>
           </div>
         </div>
-
-        <!-- Cuadro desplegable de la consulta SQL ejecutada -->
-        <transition name="sql-slide">
-          <div v-if="showSqlModal" class="sql-box">
-            <div class="sql-box-header">CONSULTA SQL EJECUTADA EN MYSQL:</div>
-            <pre><code>{{ activeResult.report?.query }}</code></pre>
-          </div>
-        </transition>
 
         <!-- Tabla dinámica -->
         <div class="table-responsive" v-if="activeResult.data?.length">
@@ -137,7 +136,7 @@
           </table>
         </div>
         <div class="empty-state" v-else>
-          <p>La consulta se ejecutó con éxito pero no devolvió filas.</p>
+          <p>El reporte se procesó con éxito pero no devolvió filas.</p>
         </div>
       </div>
     </div>
@@ -148,20 +147,20 @@
         <StatCard
           icon="tag"
           label="Valor del Almacén en Piezas"
-          :value="'$' + inventoryValuation.toFixed(2)"
+          :value="formatCurrency(inventoryValuation)"
           color="var(--blue)"
         />
         <StatCard
           icon="box"
-          label="Total Refacciones en Stock"
-          :value="totalUnitsInStock"
-          color="var(--success)"
+          label="Total de Refacciones en Stock"
+          :value="totalUnitsInStock + ' piezas'"
+          color="var(--accent)"
         />
         <StatCard
           icon="revenue"
           label="Ticket Promedio por Servicio"
-          :value="'$' + averageTicket.toFixed(2)"
-          color="var(--accent)"
+          :value="formatCurrency(averageTicket)"
+          color="var(--success)"
         />
       </div>
 
@@ -169,8 +168,10 @@
         <!-- Top Refacciones -->
         <div class="card">
           <div class="section-header">
-            <span class="section-title">Top Refacciones Más Utilizadas</span>
-            <span class="text-muted" style="font-size:0.8rem">En órdenes de taller</span>
+            <div>
+              <h3 class="section-title">Top Refacciones Más Utilizadas</h3>
+              <p class="section-subtitle">Piezas con mayor rotación en servicios</p>
+            </div>
           </div>
           <table class="data-table" v-if="topProducts.length">
             <thead>
@@ -184,7 +185,7 @@
               <tr v-for="tp in topProducts" :key="tp.id">
                 <td class="font-semibold">{{ tp.name }}</td>
                 <td><code style="background:var(--bg-hover);padding:2px 7px;border-radius:4px">{{ tp.usedQty }} pzas</code></td>
-                <td class="text-accent font-semibold">${{ tp.revenue.toFixed(2) }}</td>
+                <td class="text-accent font-semibold">{{ formatCurrency(tp.revenue) }}</td>
               </tr>
             </tbody>
           </table>
@@ -196,16 +197,18 @@
         <!-- Resumen de Órdenes por Estatus -->
         <div class="card">
           <div class="section-header">
-            <span class="section-title">Estatus Operativo del Taller</span>
-            <span class="text-muted" style="font-size:0.8rem">Flujo de bahías</span>
+            <div>
+              <h3 class="section-title">Estatus Operativo del Taller</h3>
+              <p class="section-subtitle">Distribución y flujo por bahías</p>
+            </div>
           </div>
           <div class="status-summary-list">
             <div class="status-row" v-for="st in statusBreakdown" :key="st.status">
-              <div style="display:flex;align-items:center;gap:8px">
+              <div class="status-row-left">
                 <StatusBadge :status="st.status" />
-                <span class="font-semibold">{{ st.count }} vehículos</span>
+                <span class="status-count">{{ st.count }} {{ st.count === 1 ? 'vehículo' : 'vehículos' }}</span>
               </div>
-              <span class="text-muted">${{ st.total.toFixed(2) }}</span>
+              <span class="status-amount">{{ formatCurrency(st.total) }}</span>
             </div>
           </div>
         </div>
@@ -220,8 +223,10 @@ import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
 import StatCard from '../components/ui/StatCard.vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
+import { formatCurrency } from '../utils/format'
 
 const store = useStore()
+const apiBase = import.meta.env.VITE_API_URL
 const toast = useToast()
 
 const activeTab = ref('reports')
@@ -230,7 +235,6 @@ const loadingReportId = ref(null)
 const reports = ref([])
 const activeReport = ref(null)
 const activeResult = ref(null)
-const showSqlModal = ref(false)
 
 onMounted(async () => {
   await store.fetchProducts()
@@ -247,7 +251,7 @@ async function loadReportsList() {
       await selectAndRunReport(reports.value[0])
     }
   } catch (err) {
-    toast.error('Error al detectar reportes en backend')
+    toast.error('No se pudieron cargar los reportes del taller')
   } finally {
     loadingReports.value = false
   }
@@ -275,10 +279,16 @@ function formatColName(name) {
   return name.replace(/_/g, ' ').toUpperCase()
 }
 
-function exportJson() {
-  if (!activeResult.value?.data) return
-  navigator.clipboard.writeText(JSON.stringify(activeResult.value.data, null, 2))
-  toast.success('Datos exportados al portapapeles en formato JSON')
+function exportData() {
+  if (!activeResult.value?.data || !activeResult.value.data.length) return
+  const cols = resultColumns.value
+  const header = cols.map(c => formatColName(c)).join('\t')
+  const rows = activeResult.value.data.map(row =>
+    cols.map(c => (row[c] !== null && row[c] !== undefined ? row[c] : '')).join('\t')
+  )
+  const tsv = [header, ...rows].join('\n')
+  navigator.clipboard.writeText(tsv)
+  toast.success('Datos copiados al portapapeles (listos para pegar en Excel)')
 }
 
 // Métricas ejecutivas
@@ -478,35 +488,15 @@ const statusBreakdown = computed(() => {
   gap: 1rem;
 }
 
-.sql-box {
-  background: #050811;
-  border-bottom: 1px solid var(--border);
-  padding: 1rem 1.25rem;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 0.8rem;
-  color: #7dd3fc;
-  overflow-x: auto;
-}
-
-.sql-slide-enter-active, .sql-slide-leave-active {
-  transition: opacity 0.22s var(--ease-spring), transform 0.22s var(--ease-spring);
-}
-.sql-slide-enter-from, .sql-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.sql-box-header {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-  margin-bottom: 6px;
-}
-
 .table-responsive {
   max-height: 500px;
   overflow: auto;
+}
+
+.report-tag {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .stats-grid {
@@ -525,16 +515,42 @@ const statusBreakdown = computed(() => {
 .status-summary-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .status-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: var(--bg-hover);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+
+.status-row:hover {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: #192748;
+}
+
+.status-row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-count {
+  font-size: 0.875rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.status-amount {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 900px) {

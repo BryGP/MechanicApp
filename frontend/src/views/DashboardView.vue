@@ -3,29 +3,29 @@
     <div class="page-header">
       <div>
         <h2 class="page-title">Bienvenido de nuevo</h2>
-        <p class="page-subtitle">Aqui tienes el resumen de tu taller</p>
+        <p class="page-subtitle">Aquí tienes el resumen operativo de tu taller</p>
       </div>
     </div>
 
     <!-- Stat cards -->
     <div class="stats-grid">
-      <StatCard icon="box" label="Productos en inventario" :value="store.products.length" color="var(--blue)" />
+      <StatCard icon="box" label="Productos en inventario" :value="store.products.filter(p => !p.is_service).length" color="var(--blue)" />
       <StatCard icon="alert" label="Alertas de stock bajo" :value="store.lowStockProducts.length" color="var(--danger)" />
-      <StatCard icon="orders" label="Ordenes activas" :value="store.openOrders.length" color="var(--accent)" />
-      <StatCard icon="revenue" label="Total recaudado" :value="'$' + store.totalRevenue.toFixed(2)" color="var(--success)" />
+      <StatCard icon="orders" label="Órdenes activas" :value="store.openOrders.length" color="var(--accent)" />
+      <StatCard icon="revenue" label="Total recaudado" :value="formatCurrency(store.totalRevenue)" color="var(--success)" />
     </div>
 
     <div class="dash-grid">
       <!-- Recent orders -->
       <div class="card">
         <div class="section-header">
-          <span class="section-title">Ordenes recientes</span>
+          <span class="section-title">Órdenes recientes</span>
           <router-link to="/ordenes" class="btn btn-ghost btn-sm">Ver todas</router-link>
         </div>
         <table class="data-table" v-if="recentOrders.length">
           <thead>
             <tr>
-              <th>#</th><th>Cliente</th><th>Vehiculo</th><th>Estatus</th><th>Total</th>
+              <th>#</th><th>Cliente</th><th>Vehículo</th><th>Estatus</th><th>Total</th>
             </tr>
           </thead>
           <tbody>
@@ -34,7 +34,7 @@
               <td>{{ o.customer_name || 'Sin nombre' }}</td>
               <td>{{ o.vehicle || '—' }}</td>
               <td><StatusBadge :status="o.status" /></td>
-              <td class="font-semibold text-accent">${{ parseFloat(o.total).toFixed(2) }}</td>
+              <td class="font-semibold text-accent">{{ formatCurrency(o.total) }}</td>
             </tr>
           </tbody>
         </table>
@@ -42,7 +42,7 @@
           <div class="icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:36px;height:36px"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
           </div>
-          <p>No hay ordenes activas. <router-link to="/ordenes">Crear una orden</router-link></p>
+          <p>No hay órdenes activas. <router-link to="/ordenes">Crear una orden</router-link></p>
         </div>
       </div>
 
@@ -75,6 +75,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useStore } from '../store'
+import { formatCurrency } from '../utils/format'
 import StatCard from '../components/ui/StatCard.vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import StockBadge from '../components/ui/StockBadge.vue'

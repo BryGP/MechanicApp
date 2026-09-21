@@ -5,25 +5,47 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Order Model
+ * ============================================================================
+ * CLASE: Order (Modelo Eloquent)
+ * ============================================================================
+ * 
+ * ¿QUÉ HACE ESTA CLASE?
+ * Representa la orden maestra de trabajo o servicio mecánico asignada a un 
+ * vehículo y cliente (tabla 'orders'). Es el eje central que coordina el 
+ * diagnóstico, las refacciones instaladas, la mano de obra aplicada y el 
+ * cobro total de la reparación automotriz.
  *
- * Represents a workshop service order for a customer vehicle.
- * An order groups one or more OrderItems (products used in the service)
- * and tracks the overall status of the job from open to delivery.
+ * LO MÁS NOVEDOSO / DESTACADO:
+ * - Ciclo de Vida y Trazabilidad Operativa de Taller:
+ *   Modela el flujo de reparación del taller mediante estados bien definidos:
+ *   'open' (ingresado) -> 'in_progress' (en bahía) -> 'done' (listo) -> 'delivered' (entregado).
+ * - Scopes Locales Reutilizables (Local Scopes):
+ *   Facilita consultas semánticas como 'Order::open()->get()' para el tablero activo
+ *   o 'Order::closed()->get()' para el historial de ventas cerradas.
+ * - Relación Uno a Muchos con Cascade Delete:
+ *   Vincula directamente las partidas hijas de 'OrderItem'. Al removerse una orden,
+ *   sus líneas de detalle se limpian de manera segura sin dejar registros huérfanos.
  *
- * Status lifecycle:
- *   open  ?  in_progress  ?  done  ?  delivered
- *
- * @property int    $id            Auto-incremented primary key
- * @property string $customer_name Name of the vehicle owner
- * @property string $vehicle       Vehicle description (model, year, plates, etc.)
- * @property string $status        Current job status: open | in_progress | done | delivered
- * @property float  $total         Sum of all OrderItem subtotals (auto-calculated on create)
+ * PROPIEDADES DE LA TABLA 'orders':
+ * @property int            $id             Folio numérico de la orden
+ * @property string|null    $customer_name  Nombre completo del cliente o flotilla
+ * @property string|null    $vehicle        Descripción del vehículo (modelo, año, placas)
+ * @property string         $status         Estatus actual: open | in_progress | done | delivered
+ * @property float          $total          Total consolidado de la orden en MXN
+ * @property \Carbon\Carbon $created_at     Fecha y hora de apertura de la orden
+ * @property \Carbon\Carbon $updated_at     Fecha y hora del último movimiento
+ * ============================================================================
  */
 class Order extends Model
 {
+    // =========================================================================
+    // SECCIÓN 1: CONFIGURACIÓN DE CAMPOS Y ASIGNACIÓN MASIVA
+    // =========================================================================
+
     /**
-     * Attributes that can be mass-assigned.
+     * Atributos asignables de forma masiva para creación y actualización.
+     *
+     * @var list<string>
      */
     protected $fillable = [
         'customer_name',
@@ -32,18 +54,35 @@ class Order extends Model
         'total',
     ];
 
+    // =========================================================================
+    // SECCIÓN 2: RELACIONES ELOQUENT ENTRE MODELOS
+    // =========================================================================
+
     /**
-     * An order contains one or more line items (products used in the service).
-     * Deleting an order cascades to its items (configured at DB level).
+     * // Función de relación con las partidas (ítems) de la orden
+     * 
+     * Define la relación 1:N con OrderItem. Una orden contiene múltiples refacciones
+     * o servicios facturados, y su borrado en cascada está asegurado a nivel de motor DB.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function items()
     {
         return $this->hasMany(OrderItem::class);
     }
 
+    // =========================================================================
+    // SECCIÓN 3: SCOPES LOCALES DE CONSULTA Y FILTRADO
+    // =========================================================================
+
     /**
-     * Local scope: filter only orders that are still open (not yet started).
-     * Usage: Order::open()->get()
+     * // Función de scope para filtrar órdenes abiertas o pendientes
+     * 
+     * Permite consultar de forma fluida los vehículos que aún no han concluido:
+     * Ejemplo de uso: Order::open()->get()
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOpen($query)
     {
@@ -51,8 +90,13 @@ class Order extends Model
     }
 
     /**
-     * Local scope: filter only orders that have been delivered/closed.
-     * Usage: Order::closed()->get()
+     * // Función de scope para filtrar órdenes cerradas o entregadas
+     * 
+     * Permite consultar órdenes finalizadas para reportes de facturación histórica:
+     * Ejemplo de uso: Order::closed()->get()
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeClosed($query)
     {

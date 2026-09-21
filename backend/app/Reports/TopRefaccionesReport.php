@@ -2,8 +2,38 @@
 
 namespace App\Reports;
 
+/**
+ * ============================================================================
+ * CLASE: TopRefaccionesReport (Reporte de Refacciones de Alta Rotación)
+ * ============================================================================
+ * 
+ * ¿QUÉ HACE ESTA CLASE?
+ * Genera el ranking de productos e insumos con mayor demanda en las bahías del 
+ * taller mecánico. Permite negociar mejores precios de mayoreo con distribuidores 
+ * para los insumos de mayor volumen de venta.
+ *
+ * LO MÁS NOVEDOSO / DESTACADO:
+ * - Métrica de Penetración en Órdenes (COUNT(DISTINCT oi.order_id)):
+ *   Mide la frecuencia real de utilización independientemente del volumen, evitando 
+ *   que una orden atípica con muchas piezas distorsione la popularidad del producto.
+ * - Consolidación de Ingresos por Producto:
+ *   Suma los subtotales cobrados para determinar no solo qué pieza se gasta más, 
+ *   sino cuál aporta más margen y dinero directo al taller.
+ * ============================================================================
+ */
 class TopRefaccionesReport
 {
+    // =========================================================================
+    // SECCIÓN: DEFINICIÓN DE METADATOS Y SENTENCIA SQL ANALÍTICA
+    // =========================================================================
+
+    /**
+     * // Función para obtener la configuración y consulta de refacciones populares
+     * 
+     * Retorna los metadatos y la consulta con métricas de demanda e ingresos acumulados.
+     *
+     * @return array
+     */
     public static function info(): array
     {
         return [

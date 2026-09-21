@@ -2,8 +2,38 @@
 
 namespace App\Reports;
 
+/**
+ * ============================================================================
+ * CLASE: GastosPorCategoriaReport (Reporte Financiero de Egresos y Fuga de Gastos)
+ * ============================================================================
+ * 
+ * ¿QUÉ HACE ESTA CLASE?
+ * Proporciona una radiografía financiera detallada de las salidas de dinero del 
+ * taller. Agrupa los egresos por categoría operativa (nóminas, refacciones de 
+ * urgencia, herramientas, renta, servicios) para auditoría de costos fijos y variables.
+ *
+ * LO MÁS NOVEDOSO / DESTACADO:
+ * - Dispersión y Análisis Estadístico de Egresos:
+ *   Calcula el total desembolsado, el promedio por partida y los extremos (gasto 
+ *   mínimo y gasto máximo), permitiendo identificar anomalías o pagos atípicos.
+ * - Priorización por Impacto Contable:
+ *   Ordena automáticamente de mayor a menor gasto acumulado para enfocar de 
+ *   inmediato las decisiones de optimización y reducción de costos.
+ * ============================================================================
+ */
 class GastosPorCategoriaReport
 {
+    // =========================================================================
+    // SECCIÓN: DEFINICIÓN DE METADATOS Y SENTENCIA SQL ANALÍTICA
+    // =========================================================================
+
+    /**
+     * // Función para obtener la configuración y consulta de gastos operativos
+     * 
+     * Retorna los metadatos y la sentencia SQL agregada sobre la tabla 'expenses'.
+     *
+     * @return array
+     */
     public static function info(): array
     {
         return [

@@ -1,10 +1,22 @@
 <template>
   <header class="header">
-    <div class="header-info">
-      <h1 class="route-title">{{ title }}</h1>
-      <span class="route-sub">{{ subtitle }}</span>
+    <div class="header-breadcrumb">
+      <span class="bc-root">Taller</span>
+      <svg class="bc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+      <span class="bc-page">{{ currentSection }}</span>
     </div>
     <div class="header-right">
+      <div class="header-date">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="date-ic">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>{{ formattedDate }}</span>
+      </div>
       <div class="status-dot">
         <span class="dot"></span>
         <span class="status-text">Sistema activo</span>
@@ -18,15 +30,25 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const titles = {
-  Dashboard:  { label: 'Dashboard', sub: 'Resumen general del taller automotriz' },
-  Products:   { label: 'Inventario de Refacciones', sub: 'Gestión de productos y control de stock' },
-  Orders:     { label: 'Órdenes de Servicio', sub: 'Mantenimientos y reparaciones activas' },
-  Accounting: { label: 'Contabilidad & Finanzas', sub: 'Flujo de caja, egresos operativos y utilidad' },
-  Reports:    { label: 'Centro de Reportes & SQL', sub: 'Plantillas automáticas de base de datos MySQL' },
+const sectionNames = {
+  Dashboard:  'Dashboard',
+  Products:   'Inventario de Refacciones',
+  Orders:     'Órdenes de Servicio',
+  Accounting: 'Administración & Finanzas',
+  Reports:    'Centro de Reportes',
 }
-const title    = computed(() => titles[route.name]?.label ?? route.name)
-const subtitle = computed(() => titles[route.name]?.sub ?? '')
+const currentSection = computed(() => sectionNames[route.name] ?? route.name)
+
+const formattedDate = computed(() => {
+  const now = new Date()
+  const formatted = now.toLocaleDateString('es-MX', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  })
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+})
 </script>
 
 <style scoped>
@@ -41,28 +63,47 @@ const subtitle = computed(() => titles[route.name]?.sub ?? '')
   position: relative;
   z-index: 10;
 }
-.header-info {
+.header-breadcrumb {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
 }
-.route-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  color: var(--text);
-  transition: color var(--transition);
-}
-.route-sub {
-  font-size: 0.78rem;
+.bc-root {
   color: var(--text-muted);
+  font-weight: 500;
 }
+.bc-arrow {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+.bc-page {
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
+.header-date {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.date-ic {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
 .status-dot {
   display: flex;
   align-items: center;

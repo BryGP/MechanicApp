@@ -2,9 +2,39 @@
   <span :class="['badge', cls[status]]">{{ labels[status] ?? status }}</span>
 </template>
 <script setup>
-defineProps({ status: String })
-const labels = { open: 'Abierta', in_progress: 'En proceso', done: 'Terminada', delivered: 'Entregada' }
-const cls    = { open: 'b-blue', in_progress: 'b-amber', done: 'b-green', delivered: 'b-gray' }
+/**
+ * @fileoverview Work Order Status Badge Component
+ * @module components/ui/StatusBadge
+ * @description Renders a pill-shaped indicator badge reflecting order workflow state:
+ * - 'open': Active blue glow
+ * - 'in_progress': Amber glow
+ * - 'done': Emerald green glow
+ * - 'delivered': Neutral gray
+ */
+
+/**
+ * Component Props
+ * @property {'open'|'in_progress'|'done'|'delivered'} status - Current lifecycle status of the repair order
+ */
+defineProps({
+  status: { type: String, required: true }
+})
+
+/** Spanish UI label mapping for work order states */
+const labels = {
+  open: 'Abierta',
+  in_progress: 'En proceso',
+  done: 'Terminada',
+  delivered: 'Entregada'
+}
+
+/** CSS modifier class mapping */
+const cls = {
+  open: 'b-blue',
+  in_progress: 'b-amber',
+  done: 'b-green',
+  delivered: 'b-gray'
+}
 </script>
 <style scoped>
 .badge {

@@ -51,6 +51,20 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Key Performance Indicator (KPI) Stat Card
+ * @module components/ui/StatCard
+ * @description Displays high-level workshop metrics (Revenue, Expenses, Margins, Orders, Inventory)
+ * with dedicated SVG icons, customizable theme accent tints, and hover animations.
+ */
+
+/**
+ * Component Props
+ * @property {'box'|'alert'|'orders'|'revenue'|'expenses'|'profit'|'margin'|'tag'|'tools'} [icon] - Pre-rendered SVG icon identifier
+ * @property {string} label - Metric label or description (e.g. "Ingresos por Servicios")
+ * @property {string|number} value - Formatted value or count to display
+ * @property {string} [color='var(--accent)'] - Hex code or CSS variable for icon background tint and accents
+ */
 defineProps({
   icon: String,
   label: String,

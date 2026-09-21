@@ -2,10 +2,44 @@
   <span :class="['badge', cls]">{{ label }}</span>
 </template>
 <script setup>
+/**
+ * @fileoverview Inventory Stock Health Badge Component
+ * @module components/ui/StockBadge
+ * @description Renders visual indicators for physical product inventory levels:
+ * - Depleted (stock === 0): Critical red badge
+ * - Low stock (stock <= minStock): Warning amber badge
+ * - Healthy stock (stock > minStock): Success green badge
+ */
+
 import { computed } from 'vue'
-const props = defineProps({ stock: Number, minStock: Number })
-const cls   = computed(() => props.stock === 0 ? 'badge-critical' : props.stock <= props.minStock ? 'badge-low' : 'badge-ok')
-const label = computed(() => props.stock === 0 ? 'Sin stock' : props.stock <= props.minStock ? `Bajo (${props.stock})` : `OK (${props.stock})`)
+
+/**
+ * Component Props
+ * @property {number} stock - Current on-hand quantity
+ * @property {number} minStock - Minimum required inventory safety threshold
+ */
+const props = defineProps({
+  stock: { type: Number, required: true },
+  minStock: { type: Number, required: true }
+})
+
+/** Computes the CSS styling modifier based on inventory thresholds */
+const cls = computed(() => (
+  props.stock === 0
+    ? 'badge-critical'
+    : props.stock <= props.minStock
+      ? 'badge-low'
+      : 'badge-ok'
+))
+
+/** Formats the user-facing status label */
+const label = computed(() => (
+  props.stock === 0
+    ? 'Sin stock'
+    : props.stock <= props.minStock
+      ? `Bajo (${props.stock})`
+      : `OK (${props.stock})`
+))
 </script>
 <style scoped>
 .badge {

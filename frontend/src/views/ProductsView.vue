@@ -383,6 +383,15 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Inventory Parts & Labor Services Catalog View
+ * @module views/ProductsView
+ * @description Manages the auto shop's physical spare parts stock and labor service catalog:
+ * - Physical parts: stock count, minimum safety threshold alerts, purchase pricing.
+ * - Labor services: flat rate labor fees, zero-inventory management.
+ * - Search, sort, creation, editing modals, duplicate validation, and deletion dialogs.
+ */
+
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
@@ -392,13 +401,21 @@ import Modal from '../components/ui/Modal.vue'
 import StockBadge from '../components/ui/StockBadge.vue'
 import SortableTh from '../components/ui/SortableTh.vue'
 
+/** Global Pinia state store */
 const store = useStore()
+
+/** Toast notification dispatcher */
 const toast = useToast()
+
+/** Centralized confirmation modal service */
 const { askConfirm } = useConfirm()
 
+/** Loads catalog products on initial view mounting */
 onMounted(() => store.fetchProducts())
 
-// Estado de Refacciones
+// -----------------------------------------------------------------------------
+// Physical Products (Spare Parts) State
+// -----------------------------------------------------------------------------
 const productSearch = ref('')
 const stockFilter = ref('')
 const productSortField = ref('name')
@@ -406,7 +423,9 @@ const productSortOrder = ref('asc')
 const showProductModal = ref(false)
 const editingProduct = ref(null)
 
-// Estado de Servicios
+// -----------------------------------------------------------------------------
+// Labor Services Catalog State
+// -----------------------------------------------------------------------------
 const serviceSearch = ref('')
 const serviceSortField = ref('name')
 const serviceSortOrder = ref('asc')
@@ -417,7 +436,10 @@ const loading = ref(false)
 const submittedProduct = ref(false)
 const submittedService = ref(false)
 
-// Formularios
+/**
+ * Factory for creating an empty physical product payload.
+ * @returns {Object} Empty product object
+ */
 const emptyProduct = () => ({
   name: '',
   sku: '',
@@ -426,6 +448,11 @@ const emptyProduct = () => ({
   min_stock: 0,
   is_service: false
 })
+
+/**
+ * Factory for creating an empty labor service payload.
+ * @returns {Object} Empty service object
+ */
 const emptyService = () => ({
   name: '',
   sku: '',
@@ -438,11 +465,20 @@ const emptyService = () => ({
 const formProduct = ref(emptyProduct())
 const formService = ref(emptyService())
 
-// Separación de colecciones
+/** Computed list of physical inventory spare parts */
 const physicalProducts = computed(() => store.products.filter(p => !p.is_service))
+
+/** Computed list of labor services */
 const serviceProducts = computed(() => store.products.filter(p => !!p.is_service))
 
-// Ordenamiento de Refacciones
+// -----------------------------------------------------------------------------
+// Sort Handlers for Physical Spare Parts
+// -----------------------------------------------------------------------------
+
+/**
+ * Handles sorting column toggle for physical inventory items.
+ * @param {string} field - Property name to sort by
+ */
 function handleProductSort(field) {
   if (productSortField.value === field) {
     productSortOrder.value = productSortOrder.value === 'asc' ? 'desc' : 'asc'
@@ -452,6 +488,10 @@ function handleProductSort(field) {
   }
 }
 
+/**
+ * Filtered and sorted collection of physical spare parts.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredProducts = computed(() => {
   const q = productSearch.value.toLowerCase().trim()
   let list = physicalProducts.value.filter(p => {
@@ -479,7 +519,14 @@ const filteredProducts = computed(() => {
   })
 })
 
-// Ordenamiento de Servicios
+// -----------------------------------------------------------------------------
+// Sort Handlers for Labor Services
+// -----------------------------------------------------------------------------
+
+/**
+ * Handles sorting column toggle for labor services.
+ * @param {string} field - Property name to sort by
+ */
 function handleServiceSort(field) {
   if (serviceSortField.value === field) {
     serviceSortOrder.value = serviceSortOrder.value === 'asc' ? 'desc' : 'asc'
@@ -489,6 +536,10 @@ function handleServiceSort(field) {
   }
 }
 
+/**
+ * Filtered and sorted collection of labor services.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredServices = computed(() => {
   const q = serviceSearch.value.toLowerCase().trim()
   let list = serviceProducts.value.filter(s => {
@@ -511,7 +562,13 @@ const filteredServices = computed(() => {
   })
 })
 
-// Acciones para Refacciones
+// -----------------------------------------------------------------------------
+// Physical Products Modal & CRUD Actions
+// -----------------------------------------------------------------------------
+
+/**
+ * Opens the creation modal for registering a physical spare part.
+ */
 function openCreateProduct() {
   editingProduct.value = null
   formProduct.value = emptyProduct()
@@ -519,6 +576,10 @@ function openCreateProduct() {
   showProductModal.value = true
 }
 
+/**
+ * Opens the edit modal with the selected physical product's data.
+ * @param {Object} p - Product item to edit
+ */
 function openEditProduct(p) {
   editingProduct.value = p
   formProduct.value = {
@@ -533,6 +594,9 @@ function openEditProduct(p) {
   showProductModal.value = true
 }
 
+/**
+ * Validates and saves a physical product (new or update).
+ */
 async function saveProduct() {
   submittedProduct.value = true
   const name = formProduct.value.name?.trim()
@@ -553,7 +617,7 @@ async function saveProduct() {
     return toast.error('El stock físico debe ser un número entero mayor o igual a 0.')
   }
 
-  // Prevención proactiva de duplicados en el cliente
+  // Client-side duplicate prevention
   const editId = editingProduct.value?.id
   const skuDupe = store.products.find(p => p.sku?.trim().toLowerCase() === sku.toLowerCase() && p.id !== editId)
   if (skuDupe) {
@@ -590,7 +654,13 @@ async function saveProduct() {
   }
 }
 
-// Acciones para Servicios
+// -----------------------------------------------------------------------------
+// Labor Services Modal & CRUD Actions
+// -----------------------------------------------------------------------------
+
+/**
+ * Opens the creation modal for registering a new labor service.
+ */
 function openCreateService() {
   editingService.value = null
   formService.value = emptyService()
@@ -598,6 +668,10 @@ function openCreateService() {
   showServiceModal.value = true
 }
 
+/**
+ * Opens the edit modal with the selected labor service's data.
+ * @param {Object} s - Service item to edit
+ */
 function openEditService(s) {
   editingService.value = s
   formService.value = {
@@ -612,6 +686,9 @@ function openEditService(s) {
   showServiceModal.value = true
 }
 
+/**
+ * Validates and saves a labor service catalog item.
+ */
 async function saveService() {
   submittedService.value = true
   const name = formService.value.name?.trim()
@@ -628,7 +705,7 @@ async function saveService() {
     return toast.error('La tarifa al cliente debe ser obligatoria y mayor a $0.00.')
   }
 
-  // Prevención proactiva de duplicados en el cliente
+  // Client-side duplicate prevention
   const editId = editingService.value?.id
   const skuDupe = store.products.find(p => p.sku?.trim().toLowerCase() === sku.toLowerCase() && p.id !== editId)
   if (skuDupe) {
@@ -666,7 +743,14 @@ async function saveService() {
   }
 }
 
-// Eliminar cualquiera con modal centralizado
+// -----------------------------------------------------------------------------
+// Centralized Deletion Workflow
+// -----------------------------------------------------------------------------
+
+/**
+ * Prompts confirmation and removes a catalog item (product or service).
+ * @param {Object} item - Product or service item to delete
+ */
 async function removeProduct(item) {
   const isService = !!item.is_service
   const confirmed = await askConfirm({

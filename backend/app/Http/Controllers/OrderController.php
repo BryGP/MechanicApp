@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Http\Requests\StoreOrderRequest;
+use App\Http\Requests\UpdateOrderRequest;
+use App\Http\Resources\OrderResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,21 +22,16 @@ use Illuminate\Support\Facades\DB;
  * de reparación ('open' -> 'in_progress' -> 'done' -> 'delivered') y liquidación final.
  *
  * LO MÁS NOVEDOSO / DESTACADO:
+ * - Separación de validaciones en Form Requests (StoreOrderRequest, UpdateOrderRequest).
+ * - Transformación estandarizada mediante OrderResource (DTO) con partidas anidadas.
  * - Transacciones Atómicas ACID (DB::transaction):
  *   Garantiza que la creación de la cabecera de orden, inserción de cada ítem, 
  *   congelamiento de precios y deducción de existencias en almacén ocurran de forma 
  *   atómica. Si una sola pieza no existe o falla la base de datos, se ejecuta un 
  *   Rollback absoluto, previniendo inconsistencias de stock.
- * - Snapshot Pricing (Congelamiento de Precios Históricos):
- *   Almacena el precio unitario del catálogo al momento de generar la orden. Si en 
- *   el futuro el precio de un aceite o balata sube, las órdenes pasadas conservan 
- *   su importe original para auditoría contable fidedigna.
- * - Eager Loading Relacional multinivel ('with('items.product')'):
- *   Evita el problema de consultas N+1 en el API, entregando la orden, sus 
- *   partidas y los detalles de las piezas en un único payload optimizado.
- * - Discriminación de Mano de Obra vs Refacciones:
- *   Deduce existencias de almacén únicamente si el ítem es una refacción física, 
- *   protegiendo los servicios de mano de obra de conteos negativos.
+ * - Snapshot Pricing (Congelamiento de Precios Históricos).
+ * - Eager Loading Relacional multinivel ('with('items.product')').
+ * - Discriminación de Mano de Obra vs Refacciones.
  *
  * MAPEO DE RUTAS (API Resource en routes/api.php):
  * - GET    /api/orders      -> index()   (Listar órdenes con partidas)
@@ -50,17 +48,14 @@ class OrderController extends Controller
     // =========================================================================
 
     /**
-     * // Función para listar todas las órdenes de servicio del taller
-     * 
      * Consulta las órdenes más recientes con precarga ansiosa (Eager Loading)
-     * de sus partidas y el producto asociado para poblar el tablero Kanban y 
-     * el módulo de Órdenes sin sobrecargar la base de datos con consultas N+1.
+     * de sus partidas y el producto asociado, transformadas con OrderResource.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function index()
     {
-        return Order::with('items.product')->latest()->get();
+        return OrderResource::collection(Order::with('items.product')->latest()->get());
     }
 
     // =========================================================================
@@ -68,47 +63,15 @@ class OrderController extends Controller
     // =========================================================================
 
     /**
-     * // Función para crear una orden de trabajo, calcular totales y descontar refacciones
-     * 
-     * Ejecuta una transacción atómica donde:
-     * 1. Valida el cliente, vehículo y la existencia de al menos una partida.
-     * 2. Inicializa la cabecera de la orden con estatus 'open'.
-     * 3. Itera cada partida, toma el precio unitario vigente del producto, 
-     *    descuenta el inventario físico (si no es servicio) y guarda el ítem.
-     * 4. Suma los subtotales y consolida el total general de la orden.
+     * Crea una orden de trabajo, calcula totales y descuenta refacciones en transacción atómica.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \App\Models\Order
-     * @throws \Throwable En caso de error, la transacción revierte todo cambio.
+     * @param  \App\Http\Requests\StoreOrderRequest  $request
+     * @return \App\Http\Resources\OrderResource
+     * @throws \Throwable
      */
-    public function store(Request $request)
+    public function store(StoreOrderRequest $request)
     {
-        $data = $request->validate([
-            'customer_name'        => 'required|string|max:255',
-            'vehicle'              => 'required|string|max:255',
-            'notes'                => 'nullable|string|max:2000',
-            'items'                => 'required|array|min:1',
-            'items.*.product_id'   => 'required|integer|exists:products,id',
-            'items.*.qty'          => 'required|integer|min:1',
-        ], [
-            'customer_name.required' => 'El nombre del cliente es obligatorio para registrar la orden.',
-            'vehicle.required'       => 'El modelo o descripción del vehículo es obligatorio.',
-            'items.required'         => 'Debes incluir al menos una refacción o servicio.',
-            'items.min'              => 'Debes incluir al menos una refacción o servicio.',
-        ]);
-
-        // Prevención de envíos duplicados inmediatos (doble clic)
-        if (!empty($data['customer_name']) || !empty($data['vehicle'])) {
-            $recentDupe = Order::where('customer_name', $data['customer_name'])
-                ->where('vehicle', $data['vehicle'])
-                ->where('created_at', '>=', now()->subSeconds(30))
-                ->first();
-            if ($recentDupe) {
-                return response()->json([
-                    'message' => 'Ya se registró una orden con este mismo cliente y vehículo hace unos momentos.'
-                ], 422);
-            }
-        }
+        $data = $request->validated();
 
         return DB::transaction(function () use ($data) {
             // Paso 1: Crear cabecera inicial de la orden de servicio
@@ -147,7 +110,7 @@ class OrderController extends Controller
             // Paso 3: Asignar el total consolidado a la orden
             $order->update(['total' => $total]);
 
-            return $order->load('items');
+            return new OrderResource($order->load('items.product'));
         });
     }
 
@@ -156,16 +119,14 @@ class OrderController extends Controller
     // =========================================================================
 
     /**
-     * // Función para obtener el detalle completo de una orden específica por ID
-     * 
-     * Retorna la orden resuelta por Route Model Binding con todas sus partidas.
+     * Obtiene el detalle completo de una orden específica por ID.
      *
      * @param  \App\Models\Order  $order
-     * @return \App\Models\Order
+     * @return \App\Http\Resources\OrderResource
      */
     public function show(Order $order)
     {
-        return $order->load('items');
+        return new OrderResource($order->load('items.product'));
     }
 
     // =========================================================================
@@ -173,22 +134,16 @@ class OrderController extends Controller
     // =========================================================================
 
     /**
-     * // Función para actualizar el estado del vehículo o datos del cliente
-     * 
-     * Permite transicionar la orden entre fases del taller:
-     * - 'open'        : Recién ingresado, en espera de asignación de bahía.
-     * - 'in_progress' : Mecánico trabajando actualmente en la unidad.
-     * - 'done'        : Reparación concluida, listo para entrega.
-     * - 'delivered'   : Entregado al cliente y liquidado.
+     * Actualiza el estado del vehículo o datos del cliente.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Order         $order
-     * @return \App\Models\Order
+     * @param  \App\Http\Requests\UpdateOrderRequest  $request
+     * @param  \App\Models\Order                     $order
+     * @return \App\Http\Resources\OrderResource
      */
-    public function update(Request $request, Order $order)
+    public function update(UpdateOrderRequest $request, Order $order)
     {
-        $order->update($request->only('customer_name', 'vehicle', 'notes', 'status'));
-        return $order->load('items');
+        $order->update($request->validated());
+        return new OrderResource($order->load('items.product'));
     }
 
     // =========================================================================

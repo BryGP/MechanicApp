@@ -161,32 +161,59 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Application Header Component
+ * @module components/layout/AppHeader
+ * @description Top header bar showing localized current date, active user role indicator
+ * (Operator vs. Administrator), PIN login authorization modal, PIN change workflow,
+ * and system online status heartbeat.
+ */
+
 import { ref, computed, nextTick } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { useToast } from '../../composables/useToast'
 import Modal from '../ui/Modal.vue'
 
+/** Authentication composable methods and state */
 const { isAdmin, loginAdmin, logoutAdmin, updatePin } = useAuth()
+
+/** Centralized toast notification dispatcher */
 const toast = useToast()
 
+/** Controls visibility of the Admin PIN login modal */
 const showAdminModal = ref(false)
+
+/** Reactive PIN input value for logging in as admin */
 const adminPinInput = ref('')
+
+/** Input DOM reference for automatic focus management */
 const adminPinInputRef = ref(null)
 
+/** Controls visibility of the Change PIN modal */
 const showChangePinModal = ref(false)
+
+/** Validation flag tracking form submission attempt */
 const changePinSubmitted = ref(false)
+
+/** Form state container for updating the administrator PIN */
 const changePinForm = ref({
   currentPin: '',
   newPin: '',
   confirmPin: ''
 })
 
+/**
+ * Opens the administrator authentication modal and focuses the PIN input field.
+ */
 function openAdminModal() {
   adminPinInput.value = ''
   showAdminModal.value = true
   nextTick(() => adminPinInputRef.value?.focus())
 }
 
+/**
+ * Validates the entered PIN and elevates current session to Administrator mode.
+ */
 function handleAdminLogin() {
   if (loginAdmin(adminPinInput.value)) {
     toast.success('Modo Administrador activado exitosamente.')
@@ -198,6 +225,9 @@ function handleAdminLogin() {
   }
 }
 
+/**
+ * Opens the Change PIN modal dialog and clears form values.
+ */
 function openChangePinModal() {
   changePinSubmitted.value = false
   changePinForm.value = {
@@ -208,6 +238,9 @@ function openChangePinModal() {
   showChangePinModal.value = true
 }
 
+/**
+ * Validates PIN requirements and persists the new administrator security PIN.
+ */
 function handleChangePin() {
   changePinSubmitted.value = true
   const { currentPin, newPin, confirmPin } = changePinForm.value
@@ -233,6 +266,10 @@ function handleChangePin() {
   }
 }
 
+/**
+ * Formats the current date into a human-friendly Mexican Spanish string.
+ * @type {import('vue').ComputedRef<string>}
+ */
 const formattedDate = computed(() => {
   const now = new Date()
   const formatted = now.toLocaleDateString('es-MX', {

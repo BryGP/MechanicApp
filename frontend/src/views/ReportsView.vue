@@ -218,6 +218,14 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Analytics & Business Reports Engine View
+ * @module views/ReportsView
+ * @description Provides workshop business intelligence through two primary modes:
+ * - Dynamic SQL Analytical Reports: Auto-discovered queries (Critical Stock, Dead Inventory, Inventory Valuation, Customer Profitability, etc.) with dynamic tabular results and Excel/TSV clipboard export.
+ * - Executive Metrics Dashboard: Inventory total valuation, average work order ticket size, top consumed parts, and order status fulfillment breakdown.
+ */
+
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
@@ -225,23 +233,45 @@ import StatCard from '../components/ui/StatCard.vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import { formatCurrency } from '../utils/format'
 
+/** Global Pinia state store */
 const store = useStore()
+
+/** Base backend API URL */
 const apiBase = import.meta.env.VITE_API_URL
+
+/** Toast notification dispatcher */
 const toast = useToast()
 
+/** Active tab view ('reports' for dynamic queries or 'metrics' for executive summary) */
 const activeTab = ref('reports')
+
+/** Loading state for template directory discovery */
 const loadingReports = ref(false)
+
+/** Identifier of the report currently executing */
 const loadingReportId = ref(null)
+
+/** Registered SQL report template definitions */
 const reports = ref([])
+
+/** Currently selected report definition */
 const activeReport = ref(null)
+
+/** Analytical results returned by backend for the active report */
 const activeResult = ref(null)
 
+/**
+ * Loads products, orders, and discovers available SQL reports on mount.
+ */
 onMounted(async () => {
   await store.fetchProducts()
   await store.fetchOrders()
   await loadReportsList()
 })
 
+/**
+ * Fetches the registry of available report templates from backend API.
+ */
 async function loadReportsList() {
   loadingReports.value = true
   try {
@@ -257,6 +287,10 @@ async function loadReportsList() {
   }
 }
 
+/**
+ * Sets the active report and triggers its backend execution.
+ * @param {Object} r - Report template object
+ */
 async function selectAndRunReport(r) {
   activeReport.value = r
   loadingReportId.value = r.id
@@ -270,15 +304,28 @@ async function selectAndRunReport(r) {
   }
 }
 
+/**
+ * Dynamically extracts column headers from the returned dataset rows.
+ * @type {import('vue').ComputedRef<Array<string>>}
+ */
 const resultColumns = computed(() => {
   if (!activeResult.value?.data || !activeResult.value.data.length) return []
   return Object.keys(activeResult.value.data[0])
 })
 
+/**
+ * Formats database column names into clean, readable header labels.
+ * @param {string} name - Raw column name (e.g. "total_recaudado")
+ * @returns {string} Formatted label (e.g. "TOTAL RECAUDADO")
+ */
 function formatColName(name) {
   return name.replace(/_/g, ' ').toUpperCase()
 }
 
+/**
+ * Exports the active report's tabular dataset to the clipboard as TSV
+ * for instant pasting into Microsoft Excel or Google Sheets.
+ */
 function exportData() {
   if (!activeResult.value?.data || !activeResult.value.data.length) return
   const cols = resultColumns.value
@@ -291,18 +338,39 @@ function exportData() {
   toast.success('Datos copiados al portapapeles (listos para pegar en Excel)')
 }
 
-// Métricas ejecutivas
+// -----------------------------------------------------------------------------
+// Executive Metrics & Business Intelligence Computations
+// -----------------------------------------------------------------------------
+
+/**
+ * Total capital tied up in physical inventory at retail price.
+ * @type {import('vue').ComputedRef<number>}
+ */
 const inventoryValuation = computed(() =>
   store.products.reduce((sum, p) => sum + parseFloat(p.price || 0) * (p.stock || 0), 0)
 )
+
+/**
+ * Total physical item units currently stored in workshop inventory.
+ * @type {import('vue').ComputedRef<number>}
+ */
 const totalUnitsInStock = computed(() =>
   store.products.reduce((sum, p) => sum + (p.stock || 0), 0)
 )
+
+/**
+ * Average ticket revenue generated per customer work order.
+ * @type {import('vue').ComputedRef<number>}
+ */
 const averageTicket = computed(() => {
   if (!store.orders.length) return 0
   return store.totalRevenue / store.orders.length
 })
 
+/**
+ * Top 5 highest velocity spare parts or services by order frequency.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const topProducts = computed(() => {
   const map = {}
   store.orders.forEach((o) => {
@@ -321,6 +389,10 @@ const topProducts = computed(() => {
     .slice(0, 5)
 })
 
+/**
+ * Distribution of work orders and revenue grouped by status.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const statusBreakdown = computed(() => {
   const map = {
     open: { status: 'open', count: 0, total: 0 },

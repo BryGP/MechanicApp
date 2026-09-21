@@ -73,6 +73,13 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Main Workshop Dashboard View
+ * @module views/DashboardView
+ * @description Operational control center displaying high-level workshop KPIs,
+ * real-time critical inventory warnings, and the latest active repair work orders.
+ */
+
 import { computed, onMounted } from 'vue'
 import { useStore } from '../store'
 import { formatCurrency } from '../utils/format'
@@ -80,11 +87,21 @@ import StatCard from '../components/ui/StatCard.vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import StockBadge from '../components/ui/StockBadge.vue'
 
+/** Global Pinia state store */
 const store = useStore()
+
+/**
+ * Loads products catalog and work orders on initial page mount.
+ */
 onMounted(async () => {
   await store.fetchProducts()
   await store.fetchOrders()
 })
+
+/**
+ * Top 5 most recent work orders for rapid executive inspection.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const recentOrders = computed(() => store.orders.slice(0, 5))
 </script>
 

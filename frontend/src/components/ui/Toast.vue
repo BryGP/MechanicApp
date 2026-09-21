@@ -40,7 +40,17 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Toast Notification Overlay Component
+ * @module components/ui/Toast
+ * @description Displays animated, temporary notification messages (Success, Error, Info)
+ * teleported to the root <body> with a high z-index (99999), ensuring alerts float
+ * cleanly above all active modals and windows.
+ */
+
 import { useToast } from '../../composables/useToast'
+
+/** Active toast notifications and dismiss action */
 const { toasts, remove } = useToast()
 </script>
 

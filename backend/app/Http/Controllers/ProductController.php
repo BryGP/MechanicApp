@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
+use App\Http\Resources\ProductResource;
 use Illuminate\Http\Request;
 
 /**
@@ -16,13 +19,12 @@ use Illuminate\Http\Request;
  * piezas mecánicas y paquetes de mano de obra (diagnósticos, afinaciones, etc.).
  *
  * LO MÁS NOVEDOSO / DESTACADO:
- * - Soporte polimórfico híbrido para productos físicos vs. servicios ('is_service'):
- *   Si el elemento es un servicio de taller, se neutraliza el control de inventario
- *   (stock = 0, min_stock = 0), permitiendo cotizar mano de obra sin restricciones.
- * - Validación inteligente de SKU único mediante exclusión de ID propio durante 
- *   actualizaciones (PATCH/PUT), evitando falsos positivos de duplicidad.
- * - Protección de integridad referencial: el sistema impide la eliminación
- *   accidental de refacciones que ya pertenezcan a órdenes de servicio cerradas.
+ * - Separación de responsabilidades mediante Form Requests dedicados:
+ *   (StoreProductRequest y UpdateProductRequest) para validaciones limpias.
+ * - Transformación estandarizada mediante ProductResource (DTO):
+ *   Garantiza un contrato JSON predecible y tipado para el frontend en Vue 3.
+ * - Soporte polimórfico híbrido para productos físicos vs. servicios ('is_service').
+ * - Protección de integridad referencial contra eliminación de piezas en órdenes previas.
  *
  * MAPEO DE RUTAS (API Resource en routes/api.php):
  * - GET    /api/products      -> index()   (Listar inventario completo)
@@ -39,16 +41,13 @@ class ProductController extends Controller
     // =========================================================================
 
     /**
-     * // Función para listar refacciones y servicios disponibles
-     * 
-     * Retorna la colección completa de productos y servicios ordenados 
-     * alfabéticamente por su nombre comercial para la carga fluida en frontend.
+     * Lista todas las refacciones y servicios disponibles transformados por ProductResource.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function index()
     {
-        return Product::orderBy('name')->get();
+        return ProductResource::collection(Product::orderBy('name')->get());
     }
 
     // =========================================================================
@@ -56,33 +55,14 @@ class ProductController extends Controller
     // =========================================================================
 
     /**
-     * // Función para registrar una nueva refacción física o servicio de taller
-     * 
-     * Evalúa las reglas de validación y discrimina si el registro corresponde a:
-     * 1. Una refacción física: almacena existencias y umbral mínimo de reabastecimiento.
-     * 2. Un servicio de mano de obra: fija existencias en 0 y marca la bandera 'is_service'.
+     * Registra una nueva refacción física o servicio de taller.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param  \App\Http\Requests\StoreProductRequest  $request
+     * @return \App\Http\Resources\ProductResource
      */
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $data = $request->validate([
-            'name'        => 'required|string|max:255|unique:products,name',
-            'sku'         => 'required|string|max:255|unique:products,sku',
-            'description' => 'nullable|string|max:2000',
-            'price'       => 'required|numeric|gt:0',
-            'stock'       => 'nullable|integer|min:0',
-            'min_stock'   => 'nullable|integer|min:0',
-            'is_service'  => 'nullable|boolean',
-        ], [
-            'name.unique'    => 'Ya existe una refacción o servicio registrado con este mismo nombre.',
-            'name.required'  => 'El nombre de la refacción o servicio es obligatorio.',
-            'sku.unique'     => 'El código o clave SKU ingresado ya está registrado en otro producto o servicio.',
-            'sku.required'   => 'El código SKU es obligatorio.',
-            'price.required' => 'El precio o tarifa es obligatorio.',
-            'price.gt'       => 'El precio o tarifa debe ser mayor a $0.00.',
-        ]);
+        $data = $request->validated();
 
         // Discriminación automática: los servicios no controlan inventario
         if (!empty($data['is_service'])) {
@@ -96,7 +76,7 @@ class ProductController extends Controller
         }
 
         $product = Product::create($data);
-        return response()->json($product, 201);
+        return new ProductResource($product);
     }
 
     // =========================================================================
@@ -104,50 +84,32 @@ class ProductController extends Controller
     // =========================================================================
 
     /**
-     * // Función para actualizar datos de una refacción o servicio existente
-     * 
-     * Permite actualización parcial (estilo PATCH/PUT). Valida la unicidad del SKU y
-     * del Nombre ignorando el registro del propio producto que se está editando.
+     * Actualiza datos de una refacción o servicio existente.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Product       $product (Resuelto por Route Model Binding)
-     * @return \App\Models\Product
+     * @param  \App\Http\Requests\UpdateProductRequest  $request
+     * @param  \App\Models\Product                     $product
+     * @return \App\Http\Resources\ProductResource
      */
-    public function update(Request $request, Product $product)
+    public function update(UpdateProductRequest $request, Product $product)
     {
-        $data = $request->validate([
-            'name'        => "sometimes|string|max:255|unique:products,name,{$product->id}",
-            'sku'         => "sometimes|string|max:255|unique:products,sku,{$product->id}",
-            'description' => 'nullable|string|max:2000',
-            'price'       => 'sometimes|numeric|gt:0',
-            'stock'       => 'sometimes|integer|min:0',
-            'min_stock'   => 'sometimes|integer|min:0',
-            'is_service'  => 'sometimes|boolean',
-        ], [
-            'name.unique' => 'Ya existe otra refacción o servicio registrado con este nombre.',
-            'sku.unique'  => 'El código o SKU ingresado ya pertenece a otro producto o servicio.',
-            'price.gt'    => 'El precio o tarifa debe ser mayor a $0.00.',
-        ]);
-
+        $data = $request->validated();
         $product->update($data);
-        return $product;
+        return new ProductResource($product);
     }
 
     // =========================================================================
-    // SECCIÓN 4: CONSULTA INDIVIDUAL Y RESERVAS DE INTERFAZ
+    // SECCIÓN 4: CONSULTA INDIVIDUAL
     // =========================================================================
 
     /**
-     * // Función para consultar el detalle de un solo producto
-     * 
-     * Reservada para futuras vistas detalladas o fichas técnicas de producto.
+     * Consulta el detalle de un solo producto o servicio por ID.
      *
      * @param  \App\Models\Product  $product
-     * @return void
+     * @return \App\Http\Resources\ProductResource
      */
     public function show(Product $product)
     {
-        //
+        return new ProductResource($product);
     }
 
     /**

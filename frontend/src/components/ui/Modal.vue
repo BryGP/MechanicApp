@@ -22,7 +22,29 @@
 </template>
 
 <script setup>
-defineProps({ modelValue: Boolean, title: String, wide: Boolean })
+/**
+ * @fileoverview Generic Modal Dialog Overlay Component
+ * @module components/ui/Modal
+ * @description Renders an accessible, backdrop-blurred modal window teleported to the <body>
+ * element. Provides customizable header, content slots, and wide-mode viewport layouts.
+ */
+
+/**
+ * Component Props
+ * @property {boolean} modelValue - Reactive visibility control (v-model)
+ * @property {string} [title] - Header title text if no custom header slot is provided
+ * @property {boolean} [wide=false] - Enables wide max-width (820px) for complex tables or multi-column forms
+ */
+defineProps({
+  modelValue: { type: Boolean, required: true },
+  title: { type: String, default: '' },
+  wide: { type: Boolean, default: false }
+})
+
+/**
+ * Component Emits
+ * @fires update:modelValue - Emitted when backdrop or close button is clicked
+ */
 defineEmits(['update:modelValue'])
 </script>
 

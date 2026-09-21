@@ -378,6 +378,16 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Workshop Repair & Service Work Orders View
+ * @module views/OrdersView
+ * @description Manages the complete lifecycle of customer vehicle repair orders:
+ * - Order registration with multi-item catalog picker (parts & labor) and dynamic subtotaling.
+ * - Workflow status transitions (open -> in_progress -> done -> delivered).
+ * - Detailed inspection modal with client profile, line item table, and printable ticket layout.
+ * - Protected order deletion requiring Administrator PIN verification.
+ */
+
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
@@ -387,19 +397,33 @@ import StatusBadge from '../components/ui/StatusBadge.vue'
 import SortableTh from '../components/ui/SortableTh.vue'
 import { formatCurrency, formatDateTime } from '../utils/format'
 
+/** Global Pinia state store */
+const store = useStore()
+
+/** Notification toast dispatcher */
+const toast = useToast()
+
+/** Centralized confirmation modal service */
+const { askConfirm } = useConfirm()
+
+/**
+ * Calculates the cumulative item count of an order.
+ * @param {Object} order - Work order object
+ * @returns {number} Total units of parts and services
+ */
 function totalQuantity(order) {
   if (!order?.items?.length) return 0
   return order.items.reduce((sum, it) => sum + parseInt(it.quantity || it.qty || 1, 10), 0)
 }
 
+/**
+ * Triggers native browser print dialog for the active order ticket.
+ */
 function printOrder() {
   window.print()
 }
 
-const store = useStore()
-const toast = useToast()
-const { askConfirm } = useConfirm()
-
+/** Fetches orders and product catalog on initial mount */
 onMounted(async () => {
   await store.fetchOrders()
   await store.fetchProducts()
@@ -415,6 +439,10 @@ const selectedOrder = ref(null)
 const creating = ref(false)
 const submitted = ref(false)
 
+/**
+ * Toggles column sort field and direction.
+ * @param {string} field - Selected property to sort by
+ */
 function handleSort(field) {
   if (sortField.value === field) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
@@ -424,8 +452,13 @@ function handleSort(field) {
   }
 }
 
+/** Priority weights for sorting orders by status progression */
 const statusWeight = { open: 1, in_progress: 2, done: 3, delivered: 4 }
 
+/**
+ * Filtered and sorted collection of customer work orders.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredOrders = computed(() => {
   const q = search.value.toLowerCase().trim()
   let list = store.orders.filter(o => {
@@ -460,19 +493,29 @@ const filteredOrders = computed(() => {
   })
 })
 
+/** Alphabetically sorted labor services catalog */
 const services = computed(() =>
   store.products.filter(p => p.is_service).sort((a, b) => a.name.localeCompare(b.name, 'es'))
 )
 
+/** Alphabetically sorted physical spare parts catalog */
 const physicalParts = computed(() =>
   store.products.filter(p => !p.is_service).sort((a, b) => a.name.localeCompare(b.name, 'es'))
 )
 
+/**
+ * Opens detailed view modal for the selected work order.
+ * @param {Object} o - Work order entity
+ */
 function openDetail(o) {
   selectedOrder.value = o
   showDetailModal.value = true
 }
 
+/**
+ * Factory for creating an empty work order payload.
+ * @returns {Object} Fresh order form model
+ */
 const emptyForm = () => ({
   customer_name: '',
   vehicle: '',
@@ -481,32 +524,51 @@ const emptyForm = () => ({
 })
 const form = ref(emptyForm())
 
+/**
+ * Calculates subtotal for a single line item in the creation form.
+ * @param {Object} item - Form line item
+ * @returns {number} Line item total in MXN
+ */
 function getItemSubtotal(item) {
   if (!item.product_id) return 0
   const p = store.products.find(x => x.id === item.product_id)
   return p ? parseFloat(p.price) * (parseInt(item.qty, 10) || 0) : 0
 }
 
+/** Computed total estimate for the order currently being created */
 const orderTotal = computed(() =>
   form.value.items.reduce((sum, item) => sum + getItemSubtotal(item), 0)
 )
 
+/**
+ * Opens the new work order registration modal.
+ */
 function openCreate() {
   form.value = emptyForm()
   submitted.value = false
   showModal.value = true
 }
 
+/**
+ * Adds an empty line item row to the work order form.
+ */
 function addItem() {
   form.value.items.push({ product_id: '', qty: 1 })
 }
 
+/**
+ * Removes a specific line item row from the form.
+ * @param {number} idx - Index of item to remove
+ */
 function removeItem(idx) {
   if (form.value.items.length > 1) {
     form.value.items.splice(idx, 1)
   }
 }
 
+/**
+ * Validates and creates a new work order.
+ */
 async function submitOrder() {
   submitted.value = true
   const custName = (form.value.customer_name || '').trim()
@@ -548,6 +610,11 @@ async function submitOrder() {
   }
 }
 
+/**
+ * Updates the fulfillment status of a work order.
+ * @param {Object} order - Order to update
+ * @param {'open'|'in_progress'|'done'|'delivered'} status - Target workflow status
+ */
 async function changeStatus(order, status) {
   try {
     await store.updateOrderStatus(order.id, status)
@@ -555,6 +622,11 @@ async function changeStatus(order, status) {
   } catch (e) { toast.error(e.message) }
 }
 
+/**
+ * Prompts confirmation and removes a work order.
+ * Enforces Administrator PIN authorization.
+ * @param {Object} order - Order to delete
+ */
 async function removeOrder(order) {
   const confirmed = await askConfirm({
     title: '¿Eliminar Orden de Servicio?',

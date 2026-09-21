@@ -50,8 +50,11 @@ Route::apiResource('products', ProductController::class);
 // SECCIÓN 3: ÓRDENES DE SERVICIO Y DIAGNÓSTICO EN BAHÍAS
 // =========================================================================
 
+// Eliminación de órdenes protegida por PIN de Administrador
+Route::delete('orders/{order}', [OrderController::class, 'destroy'])->middleware('admin.pin');
+
 // Gestión del ciclo de vida de órdenes, cotizaciones y deducción de stock
-Route::apiResource('orders', OrderController::class);
+Route::apiResource('orders', OrderController::class)->except(['destroy']);
 
 // =========================================================================
 // SECCIÓN 4: MOTOR DE BUSINESS INTELLIGENCE Y REPORTES ANALÍTICOS
@@ -76,5 +79,5 @@ Route::get('expenses',              [ExpenseController::class, 'index']);
 // Registro de nuevos gastos categorizados con validación estricta
 Route::post('expenses',             [ExpenseController::class, 'store']);
 
-// Eliminación de partidas contables
-Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy']);
+// Eliminación de partidas contables protegida por PIN de Administrador
+Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->middleware('admin.pin');

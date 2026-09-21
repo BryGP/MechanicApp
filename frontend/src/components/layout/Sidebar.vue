@@ -47,7 +47,25 @@
 </template>
 
 <script setup>
-defineProps({ collapsed: Boolean })
+/**
+ * @fileoverview Main Navigation Sidebar Component
+ * @module components/layout/Sidebar
+ * @description Renders the application's collapsible sidebar navigation menu,
+ * workshop brand identity, and links to Dashboard, Products, Orders, Accounting, and Reports.
+ */
+
+/**
+ * Component Props
+ * @property {boolean} collapsed - Whether the sidebar is compacted to icon-only mode
+ */
+defineProps({
+  collapsed: { type: Boolean, default: false }
+})
+
+/**
+ * Component Emits
+ * @fires toggle - Dispatched when the user clicks the collapse/expand toggle button
+ */
 defineEmits(['toggle'])
 </script>
 

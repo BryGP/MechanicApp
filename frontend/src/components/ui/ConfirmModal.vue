@@ -92,19 +92,41 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Centralized Confirmation Modal Component
+ * @module components/ui/ConfirmModal
+ * @description Renders a modal confirmation dialog teleported to document body.
+ * Intercepts high-privilege deletions and enforces Administrator PIN verification
+ * if the operation is flagged as restricted (e.g. expenses, orders).
+ */
+
 import { ref, watch, nextTick } from 'vue'
 import { useConfirm } from '../../composables/useConfirm'
 import { useAuth } from '../../composables/useAuth'
 import { useToast } from '../../composables/useToast'
 
+/** State and handlers from the confirmation composable */
 const { isOpen, modalState, handleConfirm, handleCancel } = useConfirm()
+
+/** Authentication controls for PIN verification */
 const { isAdmin, verifyPin } = useAuth()
+
+/** Notification toast dispatcher */
 const toast = useToast()
 
+/** Reactive input value for PIN verification prompt */
 const inputPin = ref('')
+
+/** Flag indicating whether the entered PIN was invalid */
 const pinError = ref(false)
+
+/** DOM reference to PIN input element for auto-focus */
 const pinInputRef = ref(null)
 
+/**
+ * Watches modal open state to reset input fields and trigger automatic focus
+ * when the modal becomes visible to the operator.
+ */
 watch(isOpen, (newVal) => {
   if (newVal) {
     inputPin.value = ''
@@ -117,6 +139,9 @@ watch(isOpen, (newVal) => {
   }
 })
 
+/**
+ * Validates PIN requirements (if active role is not admin) and executes confirmation callback.
+ */
 function confirm() {
   // If item requires admin and user is not admin, verify PIN
   if (modalState.value.requiresAdmin && !isAdmin.value) {
@@ -134,6 +159,9 @@ function confirm() {
   handleConfirm()
 }
 
+/**
+ * Cancels the confirmation dialog and rejects/resolves false to caller.
+ */
 function cancel() {
   handleCancel()
 }

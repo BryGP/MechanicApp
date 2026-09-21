@@ -179,6 +179,14 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Workshop Accounting & Operational Expenses View
+ * @module views/AccountingView
+ * @description Manages the financial ledger of the auto shop, displaying real-time
+ * cash flow metrics (Revenue, Operating Costs, Net Profit, Operating Margin),
+ * expense registration modal, search and category filtering, sorting, and protected deletion.
+ */
+
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
@@ -188,22 +196,45 @@ import Modal from '../components/ui/Modal.vue'
 import SortableTh from '../components/ui/SortableTh.vue'
 import { formatCurrency } from '../utils/format'
 
+/** Global Pinia store instance */
 const store = useStore()
+
+/** Toast notification dispatcher */
 const toast = useToast()
+
+/** Centralized confirmation modal service */
 const { askConfirm } = useConfirm()
 
+/**
+ * Initializes view data by fetching work orders and operational expenses.
+ */
 onMounted(async () => {
   await store.fetchOrders()
   await store.fetchExpenses()
 })
 
+/** Search filter input */
 const search = ref('')
+
+/** Category filter selection */
 const selectedCategory = ref('')
+
+/** Active sort column field */
 const sortField = ref('expense_date')
+
+/** Active sort direction ('asc' or 'desc') */
 const sortOrder = ref('desc')
+
+/** Visibility toggle for the new expense modal */
 const showModal = ref(false)
+
+/** Async submission loading state */
 const loading = ref(false)
 
+/**
+ * Toggles column sort field and direction.
+ * @param {string} field - Selected property to sort by
+ */
 function handleSort(field) {
   if (sortField.value === field) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
@@ -213,7 +244,13 @@ function handleSort(field) {
   }
 }
 
+/** ISO formatted date for default today date */
 const today = new Date().toISOString().split('T')[0]
+
+/**
+ * Factory for creating an empty expense form payload.
+ * @returns {Object} Fresh expense model
+ */
 const empty = () => ({
   concept: '',
   category: 'refacciones',
@@ -222,8 +259,14 @@ const empty = () => ({
   reference: '',
   expense_date: today,
 })
+
+/** Reactive form model for expense creation */
 const form = ref(empty())
 
+/**
+ * Filtered and sorted collection of operational expenses.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredExpenses = computed(() => {
   const q = search.value.toLowerCase().trim()
   let list = store.expenses.filter((e) => {
@@ -255,6 +298,11 @@ const filteredExpenses = computed(() => {
   })
 })
 
+/**
+ * Maps category code identifiers to localized UI badge text.
+ * @param {string} cat - Category key
+ * @returns {string} Human-readable label
+ */
 function categoryLabel(cat) {
   const map = {
     refacciones: 'Refacciones',
@@ -267,11 +315,17 @@ function categoryLabel(cat) {
   return map[cat] || cat
 }
 
+/**
+ * Opens the expense creation modal with fresh default values.
+ */
 function openCreate() {
   form.value = empty()
   showModal.value = true
 }
 
+/**
+ * Validates and submits a new expense record to the backend ledger.
+ */
 async function save() {
   if (!form.value.concept.trim()) return toast.error('El concepto del gasto es requerido')
   if (!form.value.amount || form.value.amount <= 0) return toast.error('Ingresa un monto válido mayor a 0')
@@ -287,6 +341,11 @@ async function save() {
   }
 }
 
+/**
+ * Prompts confirmation and removes an expense record from the ledger.
+ * Enforces Administrator PIN authorization.
+ * @param {Object} e - Expense record entity
+ */
 async function remove(e) {
   const confirmed = await askConfirm({
     title: '¿Eliminar Registro de Egreso?',

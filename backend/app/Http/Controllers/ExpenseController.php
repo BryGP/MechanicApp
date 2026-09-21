@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Http\Requests\StoreExpenseRequest;
+use App\Http\Resources\ExpenseResource;
 use Illuminate\Http\Request;
 
 /**
@@ -17,12 +19,12 @@ use Illuminate\Http\Request;
  * historial cronológico para balances financieros y eliminar partidas erróneas.
  *
  * LO MÁS NOVEDOSO / DESTACADO:
+ * - Separación de validaciones contables en StoreExpenseRequest.
+ * - Transformación estandarizada mediante ExpenseResource (DTO).
  * - Clasificación contable granular que alimenta directamente el módulo de
  *   reportes analíticos de "Fuga de Gastos".
- * - Doble criterio de ordenamiento cronológico ('expense_date' DESC y 'id' DESC)
- *   que garantiza fidelidad temporal en auditorías contables.
- * - Validación financiera estricta con importe mínimo positivo ($0.01) y 
- *   fechas normalizadas según el estándar ISO (Y-m-d).
+ * - Doble criterio de ordenamiento cronológico ('expense_date' DESC y 'id' DESC).
+ * - Validación financiera estricta con importe mínimo positivo ($0.01).
  *
  * ENDPOINTS ASOCIADOS:
  * - GET    /api/expenses           -> index()   (Listar egresos)
@@ -37,17 +39,14 @@ class ExpenseController extends Controller
     // =========================================================================
 
     /**
-     * // Función para listar todos los egresos del taller
-     * 
-     * Retorna la totalidad de los gastos registrados ordenados de manera 
-     * descendente por fecha contable y por identificador primario.
-     * Alimenta la vista de Contabilidad y los balances de egresos del taller.
+     * Retorna la totalidad de los gastos registrados ordenados cronológicamente
+     * transformados por ExpenseResource.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
     public function index()
     {
-        return response()->json(
+        return ExpenseResource::collection(
             Expense::orderBy('expense_date', 'desc')->orderBy('id', 'desc')->get()
         );
     }
@@ -57,43 +56,15 @@ class ExpenseController extends Controller
     // =========================================================================
 
     /**
-     * // Función para registrar un nuevo gasto operativo
-     * 
-     * Valida de manera estricta los datos financieros entrantes:
-     * - Concepto descriptivo y categoría obligatoria.
-     * - Importe numérico no nulo y estrictamente mayor a cero.
-     * - Método de pago y folio o referencia bancaria/factura opcionales.
-     * - Fecha contable válida.
+     * Registra un nuevo gasto operativo mediante StoreExpenseRequest validado.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param  \App\Http\Requests\StoreExpenseRequest  $request
+     * @return \App\Http\Resources\ExpenseResource
      */
-    public function store(Request $request)
+    public function store(StoreExpenseRequest $request)
     {
-        $validated = $request->validate([
-            'concept'        => 'required|string|max:255',
-            'category'       => 'required|string|max:100',
-            'amount'         => 'required|numeric|min:0.01',
-            'payment_method' => 'nullable|string|max:50',
-            'reference'      => 'nullable|string|max:100',
-            'expense_date'   => 'required|date',
-        ]);
-
-        // Prevención de duplicados exactos en contabilidad
-        $duplicate = Expense::where('concept', $validated['concept'])
-            ->where('amount', $validated['amount'])
-            ->where('expense_date', $validated['expense_date'])
-            ->exists();
-
-        if ($duplicate) {
-            return response()->json([
-                'message' => 'Ya existe un egreso registrado con este mismo concepto, monto y fecha contable.'
-            ], 422);
-        }
-
-        $expense = Expense::create($validated);
-
-        return response()->json($expense, 201);
+        $expense = Expense::create($request->validated());
+        return new ExpenseResource($expense);
     }
 
     // =========================================================================

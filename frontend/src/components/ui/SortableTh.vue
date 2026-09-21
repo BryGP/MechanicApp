@@ -8,7 +8,7 @@
     <div class="th-content">
       <span>{{ label }}</span>
       <span class="sort-icon" :class="{ active: currentField === field }">
-        <!-- Ascendente -->
+        <!-- Ascending sort indicator -->
         <svg
           v-if="currentField === field && currentOrder === 'asc'"
           viewBox="0 0 24 24"
@@ -22,7 +22,7 @@
           <polyline points="18 15 12 9 6 15" />
         </svg>
 
-        <!-- Descendente -->
+        <!-- Descending sort indicator -->
         <svg
           v-else-if="currentField === field && currentOrder === 'desc'"
           viewBox="0 0 24 24"
@@ -36,7 +36,7 @@
           <polyline points="6 9 12 15 18 9" />
         </svg>
 
-        <!-- Neutro (Click para ordenar) -->
+        <!-- Neutral indicator (click to sort) -->
         <svg
           v-else
           viewBox="0 0 24 24"
@@ -57,11 +57,30 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Sortable Table Header Component
+ * @module components/ui/SortableTh
+ * @description Renders a clickable table header cell with active sorting indicators
+ * (ascending, descending, or neutral toggle states).
+ */
+
+/**
+ * Component Props
+ * @property {string} label - Human-readable column title displayed to the user
+ * @property {string} field - Unique property key used for sorting the dataset
+ * @property {string} currentField - Active column currently being sorted in the parent view
+ * @property {'asc'|'desc'} [currentOrder='asc'] - Active sort direction
+ */
 defineProps({
   label: { type: String, required: true },
   field: { type: String, required: true },
   currentField: { type: String, required: true },
   currentOrder: { type: String, default: 'asc' },
 })
+
+/**
+ * Component Emits
+ * @fires sort - Dispatched when the column header is clicked with the target field name
+ */
 defineEmits(['sort'])
 </script>

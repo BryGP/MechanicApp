@@ -1,12 +1,28 @@
+/**
+ * ==============================================================================
+ * AUTOMOTIVE WORKSHOP - CORE DESIGN SYSTEM & MASTER STYLESHEET
+ * ==============================================================================
+ * @fileoverview Central stylesheet defining custom design tokens, dark-mode color
+ * palette, typography, micro-interactions, responsive data table containers,
+ * modal dialog overlays, and shared component utility classes.
+ * ==============================================================================
+ */
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+/* ==============================================================================
+   1. DESIGN TOKENS & CSS CUSTOM PROPERTIES
+   ============================================================================== */
 :root {
+  /* Surface & Background Colors */
   --bg-base: #080d1a;
   --bg-card: #11192e;
   --bg-card-hover: #15223e;
   --bg-sidebar: #050811;
   --bg-hover: #182544;
   --bg-input: #0a0f1e;
+
+  /* Brand & Status Accents */
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --accent-glow: rgba(37, 99, 235, 0.35);
@@ -18,29 +34,46 @@
   --danger-glow: rgba(239, 68, 68, 0.25);
   --warning: #f59e0b;
   --warning-glow: rgba(245, 158, 11, 0.25);
+
+  /* Typography & Borders */
   --text: #f8fafc;
   --text-muted: #94a3b8;
   --border: rgba(148, 163, 184, 0.15);
   --border-focus: rgba(37, 99, 235, 0.6);
+
+  /* Layout Dimensions & Border Radii */
   --radius: 12px;
   --radius-sm: 8px;
   --sidebar-w: 240px;
   --sidebar-sm: 68px;
   --header-h: 64px;
-  
-  /* Animaciones & Sombras modernas y sutiles */
+
+  /* Spring Physics & Motion Easings */
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-pop: cubic-bezier(0.34, 1.4, 0.64, 1);
   --transition: 0.22s var(--ease-spring);
+
+  /* Elevation Shadows & Ambient Glows */
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
   --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(148, 163, 184, 0.08);
   --shadow-card-hover: 0 8px 30px -4px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(37, 99, 235, 0.25);
   --shadow-modal: 0 24px 60px -10px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(148, 163, 184, 0.14);
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
+/* ==============================================================================
+   2. RESET & BASE TYPOGRAPHY
+   ============================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg-base);
@@ -48,96 +81,173 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
-#app { height: 100%; }
+
+#app {
+  height: 100%;
+}
 
 h1, h2, h3, h4, h5, h6 {
   line-height: 1.25;
   color: var(--text);
 }
+
 p {
   line-height: 1.5;
 }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.18); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.32); }
-
-/* BUTTONS */
-.btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 9px 18px; border: none; border-radius: var(--radius-sm);
-  font-family: inherit; font-size: 0.875rem; font-weight: 600;
-  cursor: pointer; transition: transform 0.15s var(--ease-spring), box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-  white-space: nowrap; text-decoration: none;
+/* Global scrollbar styling */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
 }
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.18);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.32);
+}
+
+/* ==============================================================================
+   3. BUTTONS & INTERACTIVE ELEMENTS
+   ============================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-spring), box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
 .btn:active {
   transform: scale(0.975);
   transition-duration: 0.08s;
 }
+
+/* Primary Action Button (Brand Blue Accent) */
 .btn-primary {
   background: var(--accent);
   color: #ffffff;
   box-shadow: 0 2px 10px var(--accent-glow);
 }
+
 .btn-primary:hover {
   background: var(--accent-hover);
-  box-shadow: 0 4px 18px rgba(37,99,235,0.5);
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.5);
   transform: translateY(-1px);
 }
+
 .btn-primary:active {
   transform: scale(0.975) translateY(0);
   box-shadow: 0 1px 4px var(--accent-glow);
 }
+
+/* Danger / Destructive Action Button */
 .btn-danger {
   background: var(--danger-glow);
   color: var(--danger);
-  border: 1px solid rgba(239,68,68,0.25);
+  border: 1px solid rgba(239, 68, 68, 0.25);
 }
+
 .btn-danger:hover {
   background: var(--danger);
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(239,68,68,0.4);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
   transform: translateY(-1px);
 }
+
 .btn-danger:active {
   transform: scale(0.975);
 }
+
+/* Ghost / Secondary Neutral Button */
 .btn-ghost {
   background: transparent;
   color: var(--text-muted);
   border: 1px solid var(--border);
 }
+
 .btn-ghost:hover {
   background: var(--bg-hover);
   color: var(--text);
-  border-color: rgba(148,163,184,0.25);
+  border-color: rgba(148, 163, 184, 0.25);
   transform: translateY(-1px);
 }
+
 .btn-ghost:active {
   transform: scale(0.975);
 }
-.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
-.btn-icon {
-  width: 32px; height: 32px; padding: 0; border: none; border-radius: 6px;
-  display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: transform 0.15s var(--ease-spring), background 0.2s ease, color 0.2s ease;
-  background: transparent; color: var(--text-muted);
+
+/* Small Button Modifier */
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
 }
+
+/* Compact Icon Action Buttons (Table Rows & Modals) */
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-spring), background 0.2s ease, color 0.2s ease;
+  background: transparent;
+  color: var(--text-muted);
+}
+
 .btn-icon:hover {
   background: var(--bg-hover);
   color: var(--text);
   transform: scale(1.08);
 }
+
 .btn-icon:active {
   transform: scale(0.92);
 }
-.btn-icon.edit:hover { color: var(--blue); }
-.btn-icon.del { color: var(--danger); opacity: 0.7; }
-.btn-icon.del:hover { background: var(--danger-glow); opacity: 1; }
-.btn:disabled, .btn-icon:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
 
-/* CARD */
+.btn-icon.edit:hover {
+  color: var(--blue);
+}
+
+.btn-icon.del {
+  color: var(--danger);
+  opacity: 0.7;
+}
+
+.btn-icon.del:hover {
+  background: var(--danger-glow);
+  opacity: 1;
+}
+
+.btn:disabled,
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ==============================================================================
+   4. CARD CONTAINERS & ELEVATION
+   ============================================================================== */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -146,32 +256,68 @@ p {
   box-shadow: var(--shadow-card);
   transition: transform 0.24s var(--ease-spring), box-shadow 0.24s var(--ease-spring), border-color 0.24s var(--ease-spring);
 }
+
 .card:hover {
   box-shadow: var(--shadow-card-hover);
   border-color: rgba(148, 163, 184, 0.22);
 }
 
-/* FORM */
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; }
-.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+/* ==============================================================================
+   5. FORM CONTROLS & INPUT GROUPS
+   ============================================================================== */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px;
+}
+
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
 .form-label {
-  font-size: 0.80rem; font-weight: 700; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.05em;
+  font-size: 0.80rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   line-height: 1.3;
   min-height: 1rem;
   display: flex;
   align-items: flex-end;
 }
-.form-input, .form-select, .form-textarea {
-  width: 100%; height: 42px; padding: 0 13px;
-  background: var(--bg-input); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); color: var(--text);
-  font-family: inherit; font-size: 0.92rem; outline: none;
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  height: 42px;
+  padding: 0 13px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   box-sizing: border-box;
 }
+
 .form-textarea {
   height: auto;
   min-height: 76px;
@@ -179,48 +325,89 @@ p {
   resize: vertical;
   line-height: 1.45;
 }
-.form-input:focus, .form-select:focus, .form-textarea:focus {
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
   background: #0d1428;
 }
-.form-select option { background: var(--bg-card); color: var(--text); padding: 6px 10px; }
-.form-select optgroup { background: #0c1224; color: #94a3b8; font-weight: 700; padding: 6px 8px; font-size: 0.82rem; letter-spacing: 0.03em; }
-.form-input::placeholder, .form-textarea::placeholder { color: var(--text-muted); opacity: 0.8; }
-.form-grid { display: grid; gap: 16px; }
 
-/* TABLE */
-.data-table { width: 100%; border-collapse: collapse; }
+.form-select option {
+  background: var(--bg-card);
+  color: var(--text);
+  padding: 6px 10px;
+}
+
+.form-select optgroup {
+  background: #0c1224;
+  color: #94a3b8;
+  font-weight: 700;
+  padding: 6px 8px;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.form-grid {
+  display: grid;
+  gap: 16px;
+}
+
+/* ==============================================================================
+   6. DATA TABLES & SORTABLE HEADERS
+   ============================================================================== */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
 .data-table th {
-  text-align: left; padding: 11px 16px;
-  font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.08em;
+  text-align: left;
+  padding: 11px 16px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   border-bottom: 1px solid var(--border);
   background: var(--bg-card);
 }
+
 .data-table th.th-sortable {
   cursor: pointer;
   user-select: none;
   transition: color 0.15s ease, background 0.15s ease;
   background: var(--bg-card);
 }
+
 .data-table th.th-sortable:hover {
   color: var(--text);
   background: var(--bg-hover);
 }
+
 .data-table th.th-sortable.th-active {
   color: var(--accent);
   background: var(--bg-card);
 }
+
 .data-table th.th-sortable.th-active:hover {
   color: #60a5fa;
   background: var(--bg-hover);
 }
+
 .th-content {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
+
 .sort-icon {
   display: inline-flex;
   align-items: center;
@@ -230,25 +417,50 @@ p {
   opacity: 0.35;
   transition: opacity 0.15s ease, color 0.15s ease;
 }
+
 .data-table th.th-sortable:hover .sort-icon {
   opacity: 0.75;
 }
+
 .sort-icon.active {
   opacity: 1;
   color: var(--accent);
 }
+
 .sort-svg {
   width: 13px;
   height: 13px;
   display: block;
 }
-.data-table td { padding: 13px 16px; font-size: 0.875rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-.data-table tbody tr { transition: background 0.18s ease; }
-.data-table tbody tr:hover { background: rgba(255,255,255,0.032); }
-.data-table tbody tr:last-child td { border-bottom: none; }
-.td-actions { display: flex; gap: 4px; align-items: center; }
 
-/* TABLE SCROLL CONTAINER */
+.data-table td {
+  padding: 13px 16px;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.data-table tbody tr {
+  transition: background 0.18s ease;
+}
+
+.data-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.032);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.td-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* ==============================================================================
+   7. STICKY TABLE SCROLL CONTAINERS
+   ============================================================================== */
 .table-scroll {
   max-height: 285px;
   overflow-y: auto;
@@ -257,31 +469,38 @@ p {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
+
 .table-scroll::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 .table-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .table-scroll::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.16);
   border-radius: 4px;
 }
+
 .table-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
 .table-scroll .data-table {
   border-collapse: separate;
   border-spacing: 0;
   width: 100%;
 }
+
 .table-scroll .data-table thead {
   position: sticky;
   top: 0;
   z-index: 10;
   background: var(--bg-card);
 }
+
 .table-scroll .data-table thead th {
   position: sticky;
   top: 0;
@@ -290,37 +509,78 @@ p {
   border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 0 var(--border);
 }
+
 .table-scroll .data-table thead th.th-sortable {
   background: var(--bg-card);
 }
+
 .table-scroll .data-table thead th.th-sortable:hover {
   background: var(--bg-hover);
   color: var(--text);
 }
+
 .table-scroll .data-table thead th.th-sortable.th-active {
   background: var(--bg-card);
   color: var(--accent);
 }
+
 .table-scroll .data-table thead th.th-sortable.th-active:hover {
   background: var(--bg-hover);
   color: #60a5fa;
 }
 
-/* SEARCH */
-.search-wrap { position: relative; }
-.search-wrap input { padding-left: 38px; }
-.search-wrap .search-ic {
-  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-  color: var(--text-muted); pointer-events: none; font-size: 0.9rem;
+/* ==============================================================================
+   8. SEARCH & FILTER TOOLBARS
+   ============================================================================== */
+.search-wrap {
+  position: relative;
 }
 
-/* PAGE LAYOUT */
-.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.75rem; gap: 1rem; }
-.page-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
-.page-subtitle { font-size: 0.85rem; color: var(--text-muted); margin-top: 3px; }
-.toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.search-wrap input {
+  padding-left: 38px;
+}
 
-/* SECTION HEADER (CARDS) */
+.search-wrap .search-ic {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  font-size: 0.9rem;
+}
+
+/* ==============================================================================
+   9. PAGE LAYOUT & HEADERS
+   ============================================================================== */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+  gap: 1rem;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Section Header for Card Containers */
 .section-header {
   display: flex;
   align-items: center;
@@ -329,6 +589,7 @@ p {
   gap: 1rem;
   flex-wrap: wrap;
 }
+
 .section-title {
   font-size: 1rem;
   font-weight: 700;
@@ -336,34 +597,67 @@ p {
   letter-spacing: -0.01em;
   line-height: 1.3;
 }
+
 .section-subtitle {
   font-size: 0.8rem;
   color: var(--text-muted);
   line-height: 1.4;
 }
 
-/* ROUTE TRANSITIONS (FADE + SUBTLE MICRO SLIDE) */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease, transform 0.2s var(--ease-spring); }
-.fade-enter-from { opacity: 0; transform: translateY(6px); }
-.fade-leave-to { opacity: 0; transform: translateY(-4px); }
+/* ==============================================================================
+   10. ROUTE TRANSITIONS (FADE & MICRO-SLIDE)
+   ============================================================================== */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s var(--ease-spring);
+}
 
-/* OVERLAY / MODAL POP */
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* ==============================================================================
+   11. MODALS, OVERLAYS & VIEWPORT CONTAINMENT
+   ============================================================================== */
 .overlay {
-  position: fixed; inset: 0; z-index: 200;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
   background: rgba(3, 7, 18, 0.72);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center; padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
 }
-.overlay-enter-active { transition: opacity 0.22s var(--ease-smooth); }
-.overlay-leave-active { transition: opacity 0.18s ease; }
-.overlay-enter-from, .overlay-leave-to { opacity: 0; }
 
+.overlay-enter-active {
+  transition: opacity 0.22s var(--ease-smooth);
+}
+
+.overlay-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.overlay-enter-from,
+.overlay-leave-to {
+  opacity: 0;
+}
+
+/* Modal Window Container */
 .modal-box {
   background: var(--bg-card);
-  border: 1px solid rgba(148,163,184,0.22);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: var(--radius);
-  width: 100%; max-width: 560px;
+  width: 100%;
+  max-width: 560px;
   max-height: min(90vh, 850px);
   display: flex;
   flex-direction: column;
@@ -371,12 +665,16 @@ p {
   transform-origin: center center;
   overflow: hidden;
 }
-.modal-box.wide { max-width: 820px; }
 
-/* Micro-pop suave y elegante al abrir modal */
+.modal-box.wide {
+  max-width: 820px;
+}
+
+/* Elegant spring micro-pop animation when opening modal */
 .overlay-enter-active .modal-box {
   animation: modalPopIn 0.24s var(--ease-spring) forwards;
 }
+
 .overlay-leave-active .modal-box {
   animation: modalPopOut 0.18s ease forwards;
 }
@@ -412,7 +710,14 @@ p {
   flex-shrink: 0;
   background: var(--bg-card);
 }
-.modal-title { font-size: 1.18rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+
+.modal-title {
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
 .modal-body {
   padding: 1.6rem 1.75rem;
   display: flex;
@@ -423,6 +728,7 @@ p {
   flex: 1 1 auto;
   min-height: 0;
 }
+
 .modal-footer {
   padding: 1.1rem 1.75rem;
   border-top: 1px solid var(--border);
@@ -433,36 +739,88 @@ p {
   background: var(--bg-card);
 }
 
-/* Scrollbar refinado para modales y contenedores internos */
+/* Refined scrollbar for modal bodies and internal scrolling panes */
 .modal-body::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 .modal-body::-webkit-scrollbar-track {
   background: rgba(15, 23, 42, 0.3);
   border-radius: 9999px;
 }
+
 .modal-body::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.28);
   border-radius: 9999px;
 }
+
 .modal-body::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
 }
 
-/* TOAST STACK (FALLBACK / GENERAL) */
-.toast-stack { position: fixed; top: 1.5rem; right: 1.5rem; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+/* ==============================================================================
+   12. NOTIFICATION TOASTS & BADGES
+   ============================================================================== */
+.toast-stack {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-/* EMPTY STATE */
-.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
-.empty-state .icon { margin-bottom: 0.75rem; opacity: 0.5; }
-.empty-state p { font-size: 0.9rem; }
+/* ==============================================================================
+   13. EMPTY STATES & UTILITY CLASSES
+   ============================================================================== */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+}
 
-/* DIVIDER */
-.divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+.empty-state .icon {
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
+}
 
-/* ITEM ROW (order form) */
-.item-row { display: grid; grid-template-columns: 1fr 80px 32px; gap: 8px; align-items: center; }
-.items-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.total-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0 0; border-top: 1px solid var(--border); }
-.total-amount { font-size: 1.25rem; font-weight: 800; color: var(--accent); }
+.empty-state p {
+  font-size: 0.9rem;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+
+/* Work Order Line Items Grid & Calculations */
+.item-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 32px;
+  gap: 8px;
+  align-items: center;
+}
+
+.items-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.total-amount {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent);
+}

@@ -17,11 +17,21 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Main Application Layout Shell Component
+ * @module App
+ * @description Provides the master application shell layout, orchestrating the responsive
+ * collapsible sidebar, top navigation header, router view container, toast stack,
+ * and centralized confirmation dialogs.
+ */
+
 import { ref } from 'vue'
 import Sidebar from './components/layout/Sidebar.vue'
 import AppHeader from './components/layout/AppHeader.vue'
 import Toast from './components/ui/Toast.vue'
 import ConfirmModal from './components/ui/ConfirmModal.vue'
+
+/** Reactive collapsed state for the navigation sidebar */
 const collapsed = ref(false)
 </script>
 

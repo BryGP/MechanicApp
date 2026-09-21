@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * ============================================================================
@@ -21,6 +22,9 @@ use Illuminate\Support\ServiceProvider;
  *   Reemplaza y unifica los múltiples proveedores de versiones previas 
  *   (RouteServiceProvider, AuthServiceProvider, EventServiceProvider), 
  *   centralizando el arranque en una estructura limpia, predecible y de alto rendimiento.
+ * - Desactivación de Envoltorios de Recursos ('JsonResource::withoutWrapping()'):
+ *   Garantiza que las respuestas JSON de la API REST mantengan estructuras planas
+ *   compatibles con el cliente SPA sin envolver colecciones en claves 'data' arbitrarias.
  * ============================================================================
  */
 class AppServiceProvider extends ServiceProvider
@@ -50,13 +54,13 @@ class AppServiceProvider extends ServiceProvider
      * // Función para inicializar configuraciones globales de arranque
      * 
      * Se ejecuta una vez que todos los proveedores han sido registrados.
-     * Ideal para configurar observadores de modelos (Model Observers), longitud 
-     * de cadenas para MySQL antiguo o directivas globales de renderizado.
+     * Desactiva el envoltorio automático de recursos JSON para mantener compatibilidad
+     * con el frontend en Vue 3.
      *
      * @return void
      */
     public function boot(): void
     {
-        //
+        JsonResource::withoutWrapping();
     }
 }

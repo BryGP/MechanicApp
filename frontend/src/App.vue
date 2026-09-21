@@ -12,6 +12,7 @@
       </main>
     </div>
     <Toast />
+    <ConfirmModal />
   </div>
 </template>
 
@@ -20,6 +21,7 @@ import { ref } from 'vue'
 import Sidebar from './components/layout/Sidebar.vue'
 import AppHeader from './components/layout/AppHeader.vue'
 import Toast from './components/ui/Toast.vue'
+import ConfirmModal from './components/ui/ConfirmModal.vue'
 const collapsed = ref(false)
 </script>
 

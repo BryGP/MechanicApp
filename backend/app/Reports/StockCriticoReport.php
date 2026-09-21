@@ -58,6 +58,7 @@ class StockCriticoReport
                         ELSE 0
                     END AS sugerido_a_comprar
                 FROM products
+                WHERE is_service = 0
                 ORDER BY stock ASC
             ",
         ];

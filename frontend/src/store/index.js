@@ -11,7 +11,7 @@ export const useStore = defineStore('main', {
   }),
 
   getters: {
-    lowStockProducts: (s) => s.products.filter(p => p.stock <= p.min_stock),
+    lowStockProducts: (s) => s.products.filter(p => !p.is_service && p.stock <= p.min_stock),
     openOrders: (s) => s.orders.filter(o => o.status === 'open' || o.status === 'in_progress'),
     totalRevenue: (s) => s.orders.reduce((sum, o) => sum + parseFloat(o.total || 0), 0),
     totalExpenses: (s) => s.expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0),

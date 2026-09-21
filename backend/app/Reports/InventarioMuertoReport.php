@@ -52,7 +52,7 @@ class InventarioMuertoReport
                     DATE_FORMAT(p.created_at, '%Y-%m-%d') AS fecha_ingreso_catalogo
                 FROM products p
                 LEFT JOIN order_items oi ON p.id = oi.product_id
-                WHERE oi.id IS NULL AND p.stock > 0
+                WHERE oi.id IS NULL AND p.stock > 0 AND p.is_service = 0
                 ORDER BY dinero_congelado DESC
             ",
         ];

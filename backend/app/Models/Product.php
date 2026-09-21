@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Model;
  * PROPIEDADES DE LA TABLA 'products':
  * @property int            $id          Identificador único del producto
  * @property string         $name        Nombre descriptivo o comercial de la refacción/servicio
+ * @property string|null    $description Observaciones, especificaciones técnicas o detalles del servicio
  * @property string         $sku         Clave o código alfanumérico único de inventario
  * @property float          $price       Precio unitario al público en MXN
  * @property int            $stock       Existencias físicas en almacén (0 para servicios)
@@ -51,6 +52,7 @@ class Product extends Model
      */
     protected $fillable = [
         'name',
+        'description',
         'sku',
         'price',
         'stock',

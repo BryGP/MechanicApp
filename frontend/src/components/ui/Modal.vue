@@ -4,7 +4,9 @@
       <div v-if="modelValue" class="overlay" @click.self="$emit('update:modelValue', false)">
         <div :class="['modal-box', wide ? 'wide' : '']">
           <div class="modal-header">
-            <span class="modal-title">{{ title }}</span>
+            <slot name="header">
+              <span class="modal-title">{{ title }}</span>
+            </slot>
             <button class="btn-icon close-btn" @click="$emit('update:modelValue', false)" title="Cerrar ventana">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
                 <line x1="18" y1="6" x2="6" y2="18"/>

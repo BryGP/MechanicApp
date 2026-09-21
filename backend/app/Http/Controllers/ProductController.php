@@ -68,19 +68,20 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'       => 'required|string|max:255|unique:products,name',
-            'sku'        => 'required|string|max:255|unique:products,sku',
-            'price'      => 'required|numeric|min:0',
-            'stock'      => 'nullable|integer|min:0',
-            'min_stock'  => 'nullable|integer|min:0',
-            'is_service' => 'nullable|boolean',
+            'name'        => 'required|string|max:255|unique:products,name',
+            'sku'         => 'required|string|max:255|unique:products,sku',
+            'description' => 'nullable|string|max:2000',
+            'price'       => 'required|numeric|gt:0',
+            'stock'       => 'nullable|integer|min:0',
+            'min_stock'   => 'nullable|integer|min:0',
+            'is_service'  => 'nullable|boolean',
         ], [
             'name.unique'    => 'Ya existe una refacción o servicio registrado con este mismo nombre.',
             'name.required'  => 'El nombre de la refacción o servicio es obligatorio.',
             'sku.unique'     => 'El código o clave SKU ingresado ya está registrado en otro producto o servicio.',
             'sku.required'   => 'El código SKU es obligatorio.',
             'price.required' => 'El precio o tarifa es obligatorio.',
-            'price.min'      => 'El precio o tarifa no puede ser un número negativo.',
+            'price.gt'       => 'El precio o tarifa debe ser mayor a $0.00.',
         ]);
 
         // Discriminación automática: los servicios no controlan inventario
@@ -115,16 +116,17 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $data = $request->validate([
-            'name'       => "sometimes|string|max:255|unique:products,name,{$product->id}",
-            'sku'        => "sometimes|string|max:255|unique:products,sku,{$product->id}",
-            'price'      => 'sometimes|numeric|min:0',
-            'stock'      => 'sometimes|integer|min:0',
-            'min_stock'  => 'sometimes|integer|min:0',
-            'is_service' => 'sometimes|boolean',
+            'name'        => "sometimes|string|max:255|unique:products,name,{$product->id}",
+            'sku'         => "sometimes|string|max:255|unique:products,sku,{$product->id}",
+            'description' => 'nullable|string|max:2000',
+            'price'       => 'sometimes|numeric|gt:0',
+            'stock'       => 'sometimes|integer|min:0',
+            'min_stock'   => 'sometimes|integer|min:0',
+            'is_service'  => 'sometimes|boolean',
         ], [
             'name.unique' => 'Ya existe otra refacción o servicio registrado con este nombre.',
             'sku.unique'  => 'El código o SKU ingresado ya pertenece a otro producto o servicio.',
-            'price.min'   => 'El precio o tarifa no puede ser un número negativo.',
+            'price.gt'    => 'El precio o tarifa debe ser mayor a $0.00.',
         ]);
 
         $product->update($data);

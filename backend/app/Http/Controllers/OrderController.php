@@ -84,17 +84,23 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'customer_name'        => 'nullable|string',
-            'vehicle'              => 'nullable|string',
+            'customer_name'        => 'required|string|max:255',
+            'vehicle'              => 'required|string|max:255',
+            'notes'                => 'nullable|string|max:2000',
             'items'                => 'required|array|min:1',
             'items.*.product_id'   => 'required|integer|exists:products,id',
             'items.*.qty'          => 'required|integer|min:1',
+        ], [
+            'customer_name.required' => 'El nombre del cliente es obligatorio para registrar la orden.',
+            'vehicle.required'       => 'El modelo o descripción del vehículo es obligatorio.',
+            'items.required'         => 'Debes incluir al menos una refacción o servicio.',
+            'items.min'              => 'Debes incluir al menos una refacción o servicio.',
         ]);
 
         // Prevención de envíos duplicados inmediatos (doble clic)
         if (!empty($data['customer_name']) || !empty($data['vehicle'])) {
-            $recentDupe = Order::where('customer_name', $data['customer_name'] ?? null)
-                ->where('vehicle', $data['vehicle'] ?? null)
+            $recentDupe = Order::where('customer_name', $data['customer_name'])
+                ->where('vehicle', $data['vehicle'])
                 ->where('created_at', '>=', now()->subSeconds(30))
                 ->first();
             if ($recentDupe) {
@@ -107,8 +113,9 @@ class OrderController extends Controller
         return DB::transaction(function () use ($data) {
             // Paso 1: Crear cabecera inicial de la orden de servicio
             $order = Order::create([
-                'customer_name' => $data['customer_name'] ?? null,
-                'vehicle'       => $data['vehicle'] ?? null,
+                'customer_name' => trim($data['customer_name']),
+                'vehicle'       => trim($data['vehicle']),
+                'notes'         => !empty($data['notes']) ? trim($data['notes']) : null,
                 'status'        => 'open',
                 'total'         => 0,
             ]);
@@ -180,7 +187,7 @@ class OrderController extends Controller
      */
     public function update(Request $request, Order $order)
     {
-        $order->update($request->only('customer_name', 'vehicle', 'status'));
+        $order->update($request->only('customer_name', 'vehicle', 'notes', 'status'));
         return $order->load('items');
     }
 

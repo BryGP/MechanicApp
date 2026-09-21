@@ -61,11 +61,9 @@
                   <button
                     class="btn-icon del"
                     @click="removeProduct(p)"
-                    :title="confirmDelete?.id === p.id ? 'Haz clic de nuevo para confirmar' : 'Eliminar'"
-                    :style="confirmDelete?.id === p.id ? 'background:var(--danger-glow);opacity:1;color:var(--danger)' : ''"
+                    title="Eliminar Refacción"
                   >
-                    <span v-if="confirmDelete?.id === p.id" style="font-size:0.75rem;font-weight:700">OK?</span>
-                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                   </button>
                 </div>
               </td>
@@ -127,11 +125,9 @@
                   <button
                     class="btn-icon del"
                     @click="removeProduct(s)"
-                    :title="confirmDelete?.id === s.id ? 'Haz clic de nuevo para confirmar' : 'Eliminar'"
-                    :style="confirmDelete?.id === s.id ? 'background:var(--danger-glow);opacity:1;color:var(--danger)' : ''"
+                    title="Eliminar Servicio"
                   >
-                    <span v-if="confirmDelete?.id === s.id" style="font-size:0.75rem;font-weight:700">OK?</span>
-                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                   </button>
                 </div>
               </td>
@@ -148,61 +144,238 @@
     </div>
 
     <!-- MODAL 1: NUEVA / EDITAR REFACCIÓN FÍSICA -->
-    <Modal v-model="showProductModal" :title="editingProduct ? 'Editar Refacción' : 'Nueva Refacción'">
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Nombre de la refacción *</label>
-          <input v-model="formProduct.name" class="form-input" placeholder="Ej. Balatas Delanteras, Aceite 10W-30..." />
-        </div>
-        <div class="form-group">
-          <label class="form-label">SKU / Código *</label>
-          <input v-model="formProduct.sku" class="form-input" placeholder="Ej. BAL-DEL-01" :disabled="!!editingProduct" />
-        </div>
-        <div class="form-row-3">
-          <div class="form-group">
-            <label class="form-label">Precio ($) *</label>
-            <input v-model.number="formProduct.price" type="number" min="0" step="0.01" class="form-input" />
+    <Modal v-model="showProductModal" :wide="true">
+      <template #header>
+        <div class="product-modal-header">
+          <div class="product-modal-icon part-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
           </div>
-          <div class="form-group">
-            <label class="form-label">Stock actual *</label>
-            <input v-model.number="formProduct.stock" type="number" min="0" class="form-input" />
+          <div>
+            <div class="product-modal-title">
+              {{ editingProduct ? 'Editar Refacción en Almacén' : 'Nueva Refacción de Almacén' }}
+            </div>
+            <div class="product-modal-subtitle">
+              {{ editingProduct ? 'Modifica los precios, existencias o catálogo de la pieza' : 'Registra una nueva pieza física para el control de inventario y refacciones' }}
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Stock mínimo</label>
-            <input v-model.number="formProduct.min_stock" type="number" min="0" class="form-input" />
+        </div>
+      </template>
+
+      <div class="modal-body product-modal-body">
+        <!-- Panel 1: Identificación y Catálogo -->
+        <div class="product-panel">
+          <div class="product-panel-header">
+            <span class="product-panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              Identificación y Catálogo
+            </span>
+            <span class="req-legend"><span class="req-star">*</span> Campos obligatorios</span>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">
+                Nombre de la refacción <span class="req-star">*</span>
+              </label>
+              <input
+                v-model="formProduct.name"
+                class="form-input form-input-lg"
+                :class="{ 'input-has-error': submittedProduct && !formProduct.name.trim() }"
+                placeholder="Ej. Balatas Cerámicas Brembo Delanteras, Aceite 5W-30..."
+              />
+              <span v-if="submittedProduct && !formProduct.name.trim()" class="form-field-error">
+                El nombre de la refacción es obligatorio
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                SKU / Código de Almacén <span class="req-star">*</span>
+              </label>
+              <input
+                v-model="formProduct.sku"
+                class="form-input form-input-lg"
+                :class="{ 'input-has-error': submittedProduct && !formProduct.sku.trim() }"
+                placeholder="Ej. BAL-BREM-01"
+                :disabled="!!editingProduct"
+              />
+              <span v-if="submittedProduct && !formProduct.sku.trim()" class="form-field-error">
+                El código SKU es obligatorio
+              </span>
+              <span class="field-hint" v-else>
+                {{ editingProduct ? 'El SKU no puede ser modificado para mantener la trazabilidad.' : 'Código único e irrepetible para control de existencias.' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 2: Precios y Stock -->
+        <div class="product-panel">
+          <div class="product-panel-header">
+            <span class="product-panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Precio al Público y Control de Stock
+            </span>
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label class="form-label">
+                Precio de Venta ($ MXN) <span class="req-star">*</span>
+              </label>
+              <input
+                v-model.number="formProduct.price"
+                type="number"
+                min="0.01"
+                step="0.01"
+                class="form-input form-input-lg"
+                :class="{ 'input-has-error': submittedProduct && (formProduct.price === null || formProduct.price === '' || formProduct.price <= 0) }"
+                placeholder="0.00"
+              />
+              <span v-if="submittedProduct && (formProduct.price === null || formProduct.price === '' || formProduct.price <= 0)" class="form-field-error">
+                El precio debe ser mayor a $0.00
+              </span>
+              <span class="field-hint" v-else>Importe unitario cotizado al cliente (obligatorio > $0).</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Stock Físico Actual <span class="req-star">*</span>
+              </label>
+              <input
+                v-model.number="formProduct.stock"
+                type="number"
+                min="0"
+                class="form-input form-input-lg"
+                :class="{ 'input-has-error': submittedProduct && (formProduct.stock === null || formProduct.stock === '' || formProduct.stock < 0) }"
+                placeholder="0"
+              />
+              <span v-if="submittedProduct && (formProduct.stock === null || formProduct.stock === '' || formProduct.stock < 0)" class="form-field-error">
+                Stock inválido
+              </span>
+              <span class="field-hint" v-else>Piezas disponibles hoy en anaquel.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Stock Mínimo (Alerta)
+              </label>
+              <input
+                v-model.number="formProduct.min_stock"
+                type="number"
+                min="0"
+                class="form-input form-input-lg"
+                placeholder="0"
+              />
+              <span class="field-hint">Alerta de resurtido al llegar a este umbral.</span>
+            </div>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" @click="showProductModal = false">Cancelar</button>
-        <button class="btn btn-primary" @click="saveProduct" :disabled="loading">
-          {{ loading ? 'Guardando...' : editingProduct ? 'Actualizar Refacción' : 'Crear Refacción' }}
+
+      <div class="modal-footer product-modal-footer">
+        <button class="btn btn-ghost" @click="showProductModal = false" type="button">Cancelar</button>
+        <button class="btn btn-primary btn-submit-product" @click="saveProduct" :disabled="loading" type="button">
+          <svg v-if="!loading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span>{{ loading ? 'Guardando...' : editingProduct ? 'Actualizar Refacción' : 'Registrar Refacción' }}</span>
         </button>
       </div>
     </Modal>
 
     <!-- MODAL 2: NUEVO / EDITAR SERVICIO DE TALLER -->
-    <Modal v-model="showServiceModal" :title="editingService ? 'Editar Servicio' : 'Nuevo Servicio de Taller'">
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Nombre del servicio o mano de obra *</label>
-          <input v-model="formService.name" class="form-input" placeholder="Ej. Alineación y Balanceo, Diagnóstico por Escáner..." />
-        </div>
-        <div class="form-row-2">
-          <div class="form-group">
-            <label class="form-label">Clave / Código *</label>
-            <input v-model="formService.sku" class="form-input" placeholder="Ej. SERV-ALIN-01" :disabled="!!editingService" />
+    <Modal v-model="showServiceModal" :wide="true">
+      <template #header>
+        <div class="product-modal-header">
+          <div class="product-modal-icon service-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
           </div>
+          <div>
+            <div class="product-modal-title">
+              {{ editingService ? 'Editar Servicio de Taller' : 'Nuevo Servicio de Mano de Obra' }}
+            </div>
+            <div class="product-modal-subtitle">
+              {{ editingService ? 'Actualiza la tarifa o clave del trabajo mecánico' : 'Registra mano de obra, afinaciones, revisiones o diagnósticos' }}
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <div class="modal-body product-modal-body">
+        <div class="product-panel">
+          <div class="product-panel-header">
+            <span class="product-panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              Datos del Servicio y Mano de Obra
+            </span>
+            <span class="req-legend"><span class="req-star">*</span> Campos obligatorios</span>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">
+                Nombre del servicio mecánico <span class="req-star">*</span>
+              </label>
+              <input
+                v-model="formService.name"
+                class="form-input form-input-lg"
+                :class="{ 'input-has-error': submittedService && !formService.name.trim() }"
+                placeholder="Ej. Afinación Mayor y Cambio de Bujías, Escaneo OBD-II..."
+              />
+              <span v-if="submittedService && !formService.name.trim()" class="form-field-error">
+                El nombre del servicio es obligatorio
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Clave / Código del Servicio <span class="req-star">*</span>
+              </label>
+              <input
+                v-model="formService.sku"
+                class="form-input form-input-lg"
+                :class="{ 'input-has-error': submittedService && !formService.sku.trim() }"
+                placeholder="Ej. SERV-AFIN-MAYOR"
+                :disabled="!!editingService"
+              />
+              <span v-if="submittedService && !formService.sku.trim()" class="form-field-error">
+                La clave del servicio es obligatoria
+              </span>
+              <span class="field-hint" v-else>
+                {{ editingService ? 'La clave no se puede modificar para conservar el histórico.' : 'Identificador alfanumérico único para este servicio.' }}
+              </span>
+            </div>
+          </div>
+
           <div class="form-group">
-            <label class="form-label">Tarifa al cliente ($) *</label>
-            <input v-model.number="formService.price" type="number" min="0" step="0.01" class="form-input" />
+            <label class="form-label">
+              Tarifa al Cliente ($ MXN) <span class="req-star">*</span>
+            </label>
+            <div style="max-width: 320px;">
+              <input
+                v-model.number="formService.price"
+                type="number"
+                min="0.01"
+                step="0.01"
+                class="form-input form-input-lg"
+                :class="{ 'input-has-error': submittedService && (formService.price === null || formService.price === '' || formService.price <= 0) }"
+                placeholder="0.00"
+              />
+            </div>
+            <span v-if="submittedService && (formService.price === null || formService.price === '' || formService.price <= 0)" class="form-field-error">
+              La tarifa debe ser un número válido mayor a $0.00
+            </span>
+            <span class="field-hint" v-else>
+              Costo de mano de obra cobrado al cliente (obligatorio > $0). Los servicios no descuentan inventario físico.
+            </span>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" @click="showServiceModal = false">Cancelar</button>
-        <button class="btn btn-primary" @click="saveService" :disabled="loading">
-          {{ loading ? 'Guardando...' : editingService ? 'Actualizar Servicio' : 'Crear Servicio' }}
+
+      <div class="modal-footer product-modal-footer">
+        <button class="btn btn-ghost" @click="showServiceModal = false" type="button">Cancelar</button>
+        <button class="btn btn-primary btn-submit-service" @click="saveService" :disabled="loading" type="button">
+          <svg v-if="!loading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span>{{ loading ? 'Guardando...' : editingService ? 'Actualizar Servicio' : 'Registrar Servicio' }}</span>
         </button>
       </div>
     </Modal>
@@ -213,6 +386,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
+import { useConfirm } from '../composables/useConfirm'
 import { formatCurrency } from '../utils/format'
 import Modal from '../components/ui/Modal.vue'
 import StockBadge from '../components/ui/StockBadge.vue'
@@ -220,6 +394,8 @@ import SortableTh from '../components/ui/SortableTh.vue'
 
 const store = useStore()
 const toast = useToast()
+const { askConfirm } = useConfirm()
+
 onMounted(() => store.fetchProducts())
 
 // Estado de Refacciones
@@ -238,11 +414,26 @@ const showServiceModal = ref(false)
 const editingService = ref(null)
 
 const loading = ref(false)
-const confirmDelete = ref(null)
+const submittedProduct = ref(false)
+const submittedService = ref(false)
 
 // Formularios
-const emptyProduct = () => ({ name: '', sku: '', price: 0, stock: 0, min_stock: 0, is_service: false })
-const emptyService = () => ({ name: '', sku: '', price: 0, stock: 0, min_stock: 0, is_service: true })
+const emptyProduct = () => ({
+  name: '',
+  sku: '',
+  price: null,
+  stock: 0,
+  min_stock: 0,
+  is_service: false
+})
+const emptyService = () => ({
+  name: '',
+  sku: '',
+  price: null,
+  stock: 0,
+  min_stock: 0,
+  is_service: true
+})
 
 const formProduct = ref(emptyProduct())
 const formService = ref(emptyService())
@@ -324,6 +515,7 @@ const filteredServices = computed(() => {
 function openCreateProduct() {
   editingProduct.value = null
   formProduct.value = emptyProduct()
+  submittedProduct.value = false
   showProductModal.value = true
 }
 
@@ -337,14 +529,28 @@ function openEditProduct(p) {
     min_stock: p.min_stock,
     is_service: false
   }
+  submittedProduct.value = false
   showProductModal.value = true
 }
 
 async function saveProduct() {
-  const name = formProduct.value.name.trim()
-  const sku = formProduct.value.sku.trim()
-  if (!name || !sku) {
-    return toast.error('Nombre y SKU son requeridos')
+  submittedProduct.value = true
+  const name = formProduct.value.name?.trim()
+  const sku = formProduct.value.sku?.trim()
+  const price = formProduct.value.price
+  const stock = formProduct.value.stock
+
+  if (!name) {
+    return toast.error('El nombre de la refacción es obligatorio.')
+  }
+  if (!sku) {
+    return toast.error('El código o SKU de la refacción es obligatorio.')
+  }
+  if (price === null || price === undefined || price === '' || isNaN(price) || Number(price) <= 0) {
+    return toast.error('El precio de venta debe ser obligatorio y mayor a $0.00.')
+  }
+  if (stock === null || stock === undefined || stock === '' || isNaN(stock) || Number(stock) < 0) {
+    return toast.error('El stock físico debe ser un número entero mayor o igual a 0.')
   }
 
   // Prevención proactiva de duplicados en el cliente
@@ -361,14 +567,22 @@ async function saveProduct() {
 
   loading.value = true
   try {
+    const payload = {
+      ...formProduct.value,
+      name,
+      sku,
+      price: Number(price),
+      stock: Number(stock)
+    }
     if (editingProduct.value) {
-      await store.updateProduct(editingProduct.value.id, formProduct.value)
-      toast.success('Refacción actualizada correctamente')
+      await store.updateProduct(editingProduct.value.id, payload)
+      toast.success('¡Refacción actualizada correctamente!')
     } else {
-      await store.createProduct(formProduct.value)
-      toast.success('Refacción creada exitosamente')
+      await store.createProduct(payload)
+      toast.success('¡Refacción agregada exitosamente al almacén!')
     }
     showProductModal.value = false
+    submittedProduct.value = false
   } catch (e) {
     toast.error(e.message)
   } finally {
@@ -380,6 +594,7 @@ async function saveProduct() {
 function openCreateService() {
   editingService.value = null
   formService.value = emptyService()
+  submittedService.value = false
   showServiceModal.value = true
 }
 
@@ -393,14 +608,24 @@ function openEditService(s) {
     min_stock: 0,
     is_service: true
   }
+  submittedService.value = false
   showServiceModal.value = true
 }
 
 async function saveService() {
-  const name = formService.value.name.trim()
-  const sku = formService.value.sku.trim()
-  if (!name || !sku) {
-    return toast.error('Nombre y Clave del servicio son requeridos')
+  submittedService.value = true
+  const name = formService.value.name?.trim()
+  const sku = formService.value.sku?.trim()
+  const price = formService.value.price
+
+  if (!name) {
+    return toast.error('El nombre del servicio de taller es obligatorio.')
+  }
+  if (!sku) {
+    return toast.error('La clave o código del servicio es obligatoria.')
+  }
+  if (price === null || price === undefined || price === '' || isNaN(price) || Number(price) <= 0) {
+    return toast.error('La tarifa al cliente debe ser obligatoria y mayor a $0.00.')
   }
 
   // Prevención proactiva de duplicados en el cliente
@@ -417,14 +642,23 @@ async function saveService() {
 
   loading.value = true
   try {
+    const payload = {
+      ...formService.value,
+      name,
+      sku,
+      price: Number(price),
+      stock: 0,
+      min_stock: 0
+    }
     if (editingService.value) {
-      await store.updateProduct(editingService.value.id, formService.value)
-      toast.success('Servicio actualizado correctamente')
+      await store.updateProduct(editingService.value.id, payload)
+      toast.success('¡Servicio actualizado correctamente!')
     } else {
-      await store.createProduct(formService.value)
-      toast.success('Servicio creado exitosamente')
+      await store.createProduct(payload)
+      toast.success('¡Nuevo servicio agregado exitosamente al catálogo!')
     }
     showServiceModal.value = false
+    submittedService.value = false
   } catch (e) {
     toast.error(e.message)
   } finally {
@@ -432,19 +666,27 @@ async function saveService() {
   }
 }
 
-// Eliminar cualquiera
+// Eliminar cualquiera con modal centralizado
 async function removeProduct(item) {
-  if (confirmDelete.value?.id === item.id) {
-    try {
-      await store.deleteProduct(item.id)
-      toast.success(item.is_service ? 'Servicio eliminado' : 'Refacción eliminada')
-    } catch (e) {
-      toast.error(e.message)
-    }
-    confirmDelete.value = null
-  } else {
-    confirmDelete.value = item
-    setTimeout(() => { confirmDelete.value = null }, 3000)
+  const isService = !!item.is_service
+  const confirmed = await askConfirm({
+    title: isService ? '¿Eliminar Servicio de Taller?' : '¿Eliminar Refacción de Almacén?',
+    message: '¿Estás seguro de que deseas eliminar permanentemente del catálogo:',
+    itemName: `${item.name} (${item.sku})`,
+    itemType: isService ? 'service' : 'product',
+    requiresAdmin: false,
+    warningText: isService
+      ? 'El servicio dejará de estar disponible para seleccionar en nuevas órdenes de trabajo.'
+      : 'La refacción se dará de baja del almacén y no podrá agregarse a órdenes.'
+  })
+
+  if (!confirmed) return
+
+  try {
+    await store.deleteProduct(item.id)
+    toast.success(isService ? 'Servicio eliminado correctamente.' : 'Refacción eliminada del almacén.')
+  } catch (e) {
+    toast.error(e.message)
   }
 }
 </script>
@@ -482,5 +724,155 @@ async function removeProduct(item) {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+/* Modal Header Custom */
+.product-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.product-modal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.product-modal-icon.part-icon {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(56, 189, 248, 0.15));
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: var(--blue);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2);
+}
+.product-modal-icon.service-icon {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(52, 211, 153, 0.15));
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: #34d399;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.2);
+}
+.product-modal-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.product-modal-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+/* Modal Body */
+.product-modal-body {
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
+/* Panels */
+.product-panel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+.product-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+.product-panel-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.product-panel-title svg {
+  color: var(--blue);
+}
+.req-legend {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+.req-star {
+  color: #f87171;
+  font-weight: bold;
+}
+.form-input-lg {
+  height: 44px;
+  font-size: 0.95rem;
+  background: rgba(10, 15, 30, 0.8);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+.form-input-lg:focus {
+  background: #0d162f;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+.input-has-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3) !important;
+  background: rgba(239, 68, 68, 0.05) !important;
+}
+.form-field-error {
+  font-size: 0.78rem;
+  color: #fca5a5;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* Modal Footer & Buttons */
+.product-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 1.25rem 1.75rem;
+}
+.btn-submit-product {
+  padding: 10px 22px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-submit-service {
+  padding: 10px 22px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #059669;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+}
+.btn-submit-service:hover {
+  background: #047857;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.5);
+  transform: translateY(-1px);
 }
 </style>

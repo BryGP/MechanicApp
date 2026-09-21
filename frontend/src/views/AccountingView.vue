@@ -95,11 +95,9 @@
                 <button
                   class="btn-icon del"
                   @click="remove(e)"
-                  :title="confirmDelete?.id === e.id ? 'Confirmar eliminación' : 'Eliminar'"
-                  :style="confirmDelete?.id === e.id ? 'background:var(--danger-glow);opacity:1;color:var(--danger)' : ''"
+                  title="Eliminar Registro de Egreso"
                 >
-                  <span v-if="confirmDelete?.id === e.id" style="font-size:0.75rem;font-weight:700">OK?</span>
-                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
               </div>
             </td>
@@ -184,6 +182,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
+import { useConfirm } from '../composables/useConfirm'
 import StatCard from '../components/ui/StatCard.vue'
 import Modal from '../components/ui/Modal.vue'
 import SortableTh from '../components/ui/SortableTh.vue'
@@ -191,6 +190,7 @@ import { formatCurrency } from '../utils/format'
 
 const store = useStore()
 const toast = useToast()
+const { askConfirm } = useConfirm()
 
 onMounted(async () => {
   await store.fetchOrders()
@@ -203,7 +203,6 @@ const sortField = ref('expense_date')
 const sortOrder = ref('desc')
 const showModal = ref(false)
 const loading = ref(false)
-const confirmDelete = ref(null)
 
 function handleSort(field) {
   if (sortField.value === field) {
@@ -289,19 +288,22 @@ async function save() {
 }
 
 async function remove(e) {
-  if (confirmDelete.value?.id === e.id) {
-    try {
-      await store.deleteExpense(e.id)
-      toast.success('Egreso eliminado')
-    } catch (err) {
-      toast.error(err.message)
-    }
-    confirmDelete.value = null
-  } else {
-    confirmDelete.value = e
-    setTimeout(() => {
-      confirmDelete.value = null
-    }, 3000)
+  const confirmed = await askConfirm({
+    title: '¿Eliminar Registro de Egreso?',
+    message: '¿Estás seguro de que deseas eliminar permanentemente el registro contable:',
+    itemName: `${e.concept} (${formatCurrency(e.amount)})`,
+    itemType: 'expense',
+    requiresAdmin: true,
+    warningText: 'Operación financiera restringida: La eliminación de este gasto afectará los balances netos y el corte de caja del taller.'
+  })
+
+  if (!confirmed) return
+
+  try {
+    await store.deleteExpense(e.id)
+    toast.success('Registro de egreso eliminado exitosamente.')
+  } catch (err) {
+    toast.error(err.message)
   }
 }
 </script>

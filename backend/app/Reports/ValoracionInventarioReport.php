@@ -55,7 +55,7 @@ class ValoracionInventarioReport
                         ELSE 'BAJO CAPITAL'
                     END AS prioridad_capital
                 FROM products
-                WHERE stock > 0
+                WHERE stock > 0 AND is_service = 0
                 ORDER BY capital_inmovilizado DESC
             ",
         ];

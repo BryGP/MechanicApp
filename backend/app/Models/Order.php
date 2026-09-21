@@ -28,8 +28,9 @@ use Illuminate\Database\Eloquent\Model;
  *
  * PROPIEDADES DE LA TABLA 'orders':
  * @property int            $id             Folio numérico de la orden
- * @property string|null    $customer_name  Nombre completo del cliente o flotilla
- * @property string|null    $vehicle        Descripción del vehículo (modelo, año, placas)
+ * @property string         $customer_name  Nombre completo del cliente o flotilla
+ * @property string         $vehicle        Descripción del vehículo (modelo, año, placas)
+ * @property string|null    $notes          Observaciones, peticiones especiales o diagnóstico previo
  * @property string         $status         Estatus actual: open | in_progress | done | delivered
  * @property float          $total          Total consolidado de la orden en MXN
  * @property \Carbon\Carbon $created_at     Fecha y hora de apertura de la orden
@@ -50,6 +51,7 @@ class Order extends Model
     protected $fillable = [
         'customer_name',
         'vehicle',
+        'notes',
         'status',
         'total',
     ];

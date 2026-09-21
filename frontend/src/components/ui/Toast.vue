@@ -1,40 +1,42 @@
 <template>
-  <div class="toast-stack">
-    <transition-group name="toast-drop">
-      <div 
-        v-for="t in toasts" 
-        :key="t.id" 
-        :class="['toast-item', `toast-${t.type}`]"
-        @click="remove(t.id)"
-      >
-        <div class="toast-icon-wrap">
-          <svg v-if="t.type === 'success'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" class="toast-svg">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          <svg v-else-if="t.type === 'error'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" class="toast-svg">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" class="toast-svg">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="16" x2="12" y2="12"/>
-            <line x1="12" y1="8" x2="12.01" y2="8"/>
-          </svg>
+  <teleport to="body">
+    <div class="toast-stack">
+      <transition-group name="toast-drop">
+        <div 
+          v-for="t in toasts" 
+          :key="t.id" 
+          :class="['toast-item', `toast-${t.type}`]"
+          @click="remove(t.id)"
+        >
+          <div class="toast-icon-wrap">
+            <svg v-if="t.type === 'success'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" class="toast-svg">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <svg v-else-if="t.type === 'error'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" class="toast-svg">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" class="toast-svg">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </div>
+          <div class="toast-content">
+            <span class="toast-title">{{ t.type === 'error' ? 'Atención / Validación' : t.type === 'success' ? 'Operación Exitosa' : 'Aviso del Sistema' }}</span>
+            <span class="toast-msg">{{ t.message }}</span>
+          </div>
+          <button class="toast-close" @click.stop="remove(t.id)" title="Cerrar notificación">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
-        <div class="toast-content">
-          <span class="toast-title">{{ t.type === 'error' ? 'Atención / Validación' : t.type === 'success' ? 'Operación Exitosa' : 'Aviso del Sistema' }}</span>
-          <span class="toast-msg">{{ t.message }}</span>
-        </div>
-        <button class="toast-close" @click.stop="remove(t.id)" title="Cerrar notificación">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-    </transition-group>
-  </div>
+      </transition-group>
+    </div>
+  </teleport>
 </template>
 
 <script setup>
@@ -48,7 +50,7 @@ const { toasts, remove } = useToast()
   top: 1.75rem;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 10000;
+  z-index: 99999;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="orders-page">
     <div class="page-header">
       <div>
         <h2 class="page-title">Órdenes de Servicio</h2>
@@ -23,60 +23,128 @@
       </div>
     </div>
 
-    <div class="card" style="padding:0">
-      <table class="data-table" v-if="filteredOrders.length">
-        <thead>
-          <tr>
-            <SortableTh label="#" field="id" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <SortableTh label="Cliente" field="customer_name" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <SortableTh label="Vehículo" field="vehicle" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <SortableTh label="Estatus" field="status" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <SortableTh label="Total" field="total" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <th>Cambiar estatus</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="o in filteredOrders" :key="o.id">
-            <td class="text-muted">#{{ o.id }}</td>
-            <td class="font-semibold">{{ o.customer_name || 'Sin nombre' }}</td>
-            <td>{{ o.vehicle || '—' }}</td>
-            <td><StatusBadge :status="o.status" /></td>
-            <td class="font-semibold text-accent">{{ formatCurrency(o.total) }}</td>
-            <td>
-              <select class="form-select" style="padding:5px 8px;font-size:0.8rem;width:auto" :value="o.status" @change="changeStatus(o, $event.target.value)">
-                <option value="open">Abierta</option>
-                <option value="in_progress">En proceso</option>
-                <option value="done">Terminada</option>
-                <option value="delivered">Entregada</option>
-              </select>
-            </td>
-            <td>
-              <div class="td-actions">
-                <button
-                  class="btn-icon"
-                  @click="openDetail(o)"
-                  title="Ver refacciones y detalles del servicio"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-                <button
-                  class="btn-icon del"
-                  @click="removeOrder(o)"
-                  title="Eliminar Orden de Trabajo"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="card orders-card" style="padding:0">
+      <div class="table-scroll table-scroll-orders" v-if="filteredOrders.length">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <SortableTh label="#" field="id" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <SortableTh label="Cliente" field="customer_name" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <SortableTh label="Vehículo" field="vehicle" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <SortableTh label="Estatus" field="status" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <SortableTh label="Total" field="total" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <th>Cambiar estatus</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="o in pagedOrders" :key="o.id">
+              <td class="text-muted">#{{ o.id }}</td>
+              <td class="font-semibold">{{ o.customer_name || 'Sin nombre' }}</td>
+              <td>{{ o.vehicle || '—' }}</td>
+              <td><StatusBadge :status="o.status" /></td>
+              <td class="font-semibold text-accent">{{ formatCurrency(o.total) }}</td>
+              <td>
+                <select class="form-select" style="padding:5px 8px;font-size:0.8rem;width:auto" :value="o.status" @change="changeStatus(o, $event.target.value)">
+                  <option value="open">Abierta</option>
+                  <option value="in_progress">En proceso</option>
+                  <option value="done">Terminada</option>
+                  <option value="delivered">Entregada</option>
+                </select>
+              </td>
+              <td>
+                <div class="td-actions">
+                  <button
+                    class="btn-icon"
+                    @click="openDetail(o)"
+                    title="Ver refacciones y detalles del servicio"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <button
+                    class="btn-icon del"
+                    @click="removeOrder(o)"
+                    title="Eliminar Orden de Trabajo"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <div class="empty-state" v-else>
         <div class="icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:36px;height:36px"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
         </div>
         <p>{{ search || statusFilter ? 'No hay órdenes que coincidan con los filtros aplicados.' : 'No hay órdenes de servicio. Crea la primera.' }}</p>
+      </div>
+
+      <!-- Barra de Paginación y Selector de Cantidad -->
+      <div class="table-pagination" v-if="filteredOrders.length">
+        <div class="pagination-left">
+          <div class="pagination-size-selector">
+            <span>Mostrar:</span>
+            <select v-model.number="pageSize" class="pagination-size-select">
+              <option :value="10">10 órdenes</option>
+              <option :value="20">20 órdenes</option>
+              <option :value="50">50 órdenes</option>
+              <option :value="100">100 órdenes</option>
+            </select>
+          </div>
+          <span class="pagination-info">
+            Mostrando <strong>{{ startRecord }}</strong> a <strong>{{ endRecord }}</strong> de <strong>{{ filteredOrders.length }}</strong> órdenes
+          </span>
+        </div>
+
+        <div class="pagination-pages" v-if="totalPages > 1">
+          <button
+            class="pagination-btn"
+            :disabled="currentPage === 1"
+            @click="currentPage = 1"
+            title="Primera página"
+          >
+            «
+          </button>
+          <button
+            class="pagination-btn"
+            :disabled="currentPage === 1"
+            @click="currentPage--"
+            title="Página anterior"
+          >
+            ‹ Anterior
+          </button>
+
+          <template v-for="p in visiblePages" :key="p">
+            <span v-if="p === '...'" class="pagination-ellipsis">...</span>
+            <button
+              v-else
+              class="pagination-btn"
+              :class="{ active: currentPage === p }"
+              @click="currentPage = p"
+            >
+              {{ p }}
+            </button>
+          </template>
+
+          <button
+            class="pagination-btn"
+            :disabled="currentPage === totalPages"
+            @click="currentPage++"
+            title="Página siguiente"
+          >
+            Siguiente ›
+          </button>
+          <button
+            class="pagination-btn"
+            :disabled="currentPage === totalPages"
+            @click="currentPage = totalPages"
+            title="Última página"
+          >
+            »
+          </button>
+        </div>
       </div>
     </div>
 
@@ -388,7 +456,7 @@
  * - Protected order deletion requiring Administrator PIN verification.
  */
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
 import { useConfirm } from '../composables/useConfirm'
@@ -491,6 +559,54 @@ const filteredOrders = computed(() => {
       return sortOrder.value === 'asc' ? cmp : -cmp
     }
   })
+})
+
+/** Selected pagination page size (10, 20, 50, 100) */
+const pageSize = ref(10)
+
+/** Active page number (1-indexed) */
+const currentPage = ref(1)
+
+/** Reset active page to 1 whenever filters or page size change */
+watch([search, statusFilter, pageSize], () => {
+  currentPage.value = 1
+})
+
+/** Total number of pagination pages */
+const totalPages = computed(() => {
+  return Math.ceil(filteredOrders.value.length / pageSize.value) || 1
+})
+
+/** Slice of orders for current pagination page */
+const pagedOrders = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredOrders.value.slice(start, start + pageSize.value)
+})
+
+/** Start record number in current slice */
+const startRecord = computed(() => {
+  return filteredOrders.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
+})
+
+/** End record number in current slice */
+const endRecord = computed(() => {
+  return Math.min(currentPage.value * pageSize.value, filteredOrders.value.length)
+})
+
+/** Visible page buttons sequence with ellipsis support */
+const visiblePages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, '...', total]
+  }
+  if (current >= total - 3) {
+    return [1, '...', total - 4, total - 3, total - 2, total - 1, total]
+  }
+  return [1, '...', current - 1, current, current + 1, '...', total]
 })
 
 /** Alphabetically sorted labor services catalog */
@@ -1229,6 +1345,34 @@ async function removeOrder(order) {
   width: 100%;
 }
 
+/* Full-Height Layout: Expands table frame to fill viewport without dead space */
+.orders-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--header-h) - 4rem);
+  min-height: 540px;
+}
+
+.orders-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.table-scroll-orders {
+  flex: 1;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.orders-card .table-pagination {
+  margin-top: auto;
+  flex-shrink: 0;
+}
 
 @media (max-width: 640px) {
   .order-item-row {

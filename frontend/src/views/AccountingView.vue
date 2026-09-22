@@ -66,51 +66,122 @@
         </div>
       </div>
 
-      <table class="data-table" v-if="filteredExpenses.length">
-        <thead>
-          <tr>
-            <SortableTh label="Concepto" field="concept" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <SortableTh label="Categoría" field="category" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <SortableTh label="Método" field="payment_method" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <SortableTh label="Folio/Ref" field="reference" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <SortableTh label="Fecha" field="expense_date" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <SortableTh label="Monto" field="amount" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="e in filteredExpenses" :key="e.id">
-            <td class="font-semibold">{{ e.concept }}</td>
-            <td>
-              <span class="cat-pill" :class="'cat-' + e.category">
-                {{ categoryLabel(e.category) }}
-              </span>
-            </td>
-            <td><span class="pay-badge">{{ e.payment_method || 'efectivo' }}</span></td>
-            <td><code>{{ e.reference || '—' }}</code></td>
-            <td class="text-muted">{{ e.expense_date }}</td>
-            <td class="font-semibold text-danger">-{{ formatCurrency(e.amount) }}</td>
-            <td>
-              <div class="td-actions">
-                <button
-                  class="btn-icon del"
-                  @click="remove(e)"
-                  title="Eliminar Registro de Egreso"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-scroll table-scroll-accounting" v-if="filteredExpenses.length">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <SortableTh label="Concepto" field="concept" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <SortableTh label="Categoría" field="category" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <SortableTh label="Método" field="payment_method" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <SortableTh label="Folio/Ref" field="reference" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <SortableTh label="Fecha" field="expense_date" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <SortableTh label="Monto" field="amount" :current-field="sortField" :current-order="sortOrder" @sort="handleSort" />
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="e in pagedExpenses" :key="e.id">
+              <td class="font-semibold">{{ e.concept }}</td>
+              <td>
+                <span class="cat-pill" :class="'cat-' + e.category">
+                  {{ categoryLabel(e.category) }}
+                </span>
+              </td>
+              <td><span class="pay-badge">{{ e.payment_method || 'efectivo' }}</span></td>
+              <td><code>{{ e.reference || '—' }}</code></td>
+              <td class="text-muted" style="font-size:0.84rem">{{ formatDate(e.expense_date) }}</td>
+              <td class="font-semibold text-danger tabular-nums">-{{ formatCurrency(e.amount) }}</td>
+              <td>
+                <div class="td-actions">
+                  <button
+                    class="btn-icon del"
+                    @click="remove(e)"
+                    title="Eliminar Registro de Egreso"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <div class="empty-state" v-else>
         <div class="icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:36px;height:36px"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
         </div>
         <p>{{ search || selectedCategory ? 'No hay egresos con los filtros aplicados' : 'No hay gastos registrados aún. Agrega el primero.' }}</p>
       </div>
+
+      <!-- Barra de Paginación y Selector de Cantidad -->
+      <div class="table-pagination" v-if="filteredExpenses.length">
+        <div class="pagination-left">
+          <div class="pagination-size-selector">
+            <span>Mostrar:</span>
+            <select v-model.number="pageSize" class="pagination-size-select">
+              <option :value="10">10 registros</option>
+              <option :value="20">20 registros</option>
+              <option :value="50">50 registros</option>
+              <option :value="100">100 registros</option>
+            </select>
+          </div>
+          <span class="pagination-info">
+            Mostrando <strong>{{ startRecord }}</strong> a <strong>{{ endRecord }}</strong> de <strong>{{ filteredExpenses.length }}</strong> gastos
+          </span>
+        </div>
+
+        <div class="pagination-pages" v-if="totalPages > 1">
+          <button
+            class="pagination-btn"
+            :disabled="currentPage === 1"
+            @click="currentPage = 1"
+            title="Primera página"
+          >
+            «
+          </button>
+          <button
+            class="pagination-btn"
+            :disabled="currentPage === 1"
+            @click="currentPage--"
+            title="Página anterior"
+          >
+            ‹ Anterior
+          </button>
+
+          <template v-for="p in visiblePages" :key="p">
+            <span v-if="p === '...'" class="pagination-ellipsis">...</span>
+            <button
+              v-else
+              class="pagination-btn"
+              :class="{ active: currentPage === p }"
+              @click="currentPage = p"
+            >
+              {{ p }}
+            </button>
+          </template>
+
+          <button
+            class="pagination-btn"
+            :disabled="currentPage === totalPages"
+            @click="currentPage++"
+            title="Página siguiente"
+          >
+            Siguiente ›
+          </button>
+          <button
+            class="pagination-btn"
+            :disabled="currentPage === totalPages"
+            @click="currentPage = totalPages"
+            title="Última página"
+          >
+            »
+          </button>
+        </div>
+      </div>
     </div>
+
+    <!-- Suite de Analítica & Estadísticas Animadas -->
+    <FinancialAnalyticsSection />
 
     <!-- Modal Registrar Egreso -->
     <Modal v-model="showModal" title="Registrar nuevo egreso del taller">
@@ -187,14 +258,15 @@
  * expense registration modal, search and category filtering, sorting, and protected deletion.
  */
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useStore } from '../store'
 import { useToast } from '../composables/useToast'
 import { useConfirm } from '../composables/useConfirm'
 import StatCard from '../components/ui/StatCard.vue'
 import Modal from '../components/ui/Modal.vue'
 import SortableTh from '../components/ui/SortableTh.vue'
-import { formatCurrency } from '../utils/format'
+import { formatCurrency, formatDate } from '../utils/format'
+import FinancialAnalyticsSection from '../components/analytics/FinancialAnalyticsSection.vue'
 
 /** Global Pinia store instance */
 const store = useStore()
@@ -206,11 +278,14 @@ const toast = useToast()
 const { askConfirm } = useConfirm()
 
 /**
- * Initializes view data by fetching work orders and operational expenses.
+ * Initializes view data by fetching work orders, products, and operational expenses.
  */
 onMounted(async () => {
-  await store.fetchOrders()
-  await store.fetchExpenses()
+  await Promise.all([
+    store.fetchOrders(),
+    store.fetchExpenses(),
+    store.fetchProducts()
+  ])
 })
 
 /** Search filter input */
@@ -296,6 +371,54 @@ const filteredExpenses = computed(() => {
       return sortOrder.value === 'asc' ? cmp : -cmp
     }
   })
+})
+
+/** Selected pagination page size (10, 20, 50, 100) */
+const pageSize = ref(10)
+
+/** Active page number (1-indexed) */
+const currentPage = ref(1)
+
+/** Reset active page to 1 whenever filters or page size change */
+watch([search, selectedCategory, pageSize], () => {
+  currentPage.value = 1
+})
+
+/** Total number of pagination pages */
+const totalPages = computed(() => {
+  return Math.ceil(filteredExpenses.value.length / pageSize.value) || 1
+})
+
+/** Slice of expenses for current pagination page */
+const pagedExpenses = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredExpenses.value.slice(start, start + pageSize.value)
+})
+
+/** Start record number in current slice */
+const startRecord = computed(() => {
+  return filteredExpenses.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
+})
+
+/** End record number in current slice */
+const endRecord = computed(() => {
+  return Math.min(currentPage.value * pageSize.value, filteredExpenses.value.length)
+})
+
+/** Visible page buttons sequence with ellipsis support */
+const visiblePages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, '...', total]
+  }
+  if (current >= total - 3) {
+    return [1, '...', total - 4, total - 3, total - 2, total - 1, total]
+  }
+  return [1, '...', current - 1, current, current + 1, '...', total]
 })
 
 /**

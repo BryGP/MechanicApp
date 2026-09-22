@@ -53,3 +53,4 @@ pnpm-debug.log*
 # Other
 *.sqlite
 *.sql
+!database/simulacion_*.sql

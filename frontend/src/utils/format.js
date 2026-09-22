@@ -61,3 +61,40 @@ export function formatDateTime(val) {
     minute: '2-digit',
   })
 }
+
+/**
+ * Formats an ISO date string or date input into a localized, human-friendly date (without time).
+ * Prevents UTC day-shifting discrepancies by extracting local date components.
+ * 
+ * @example
+ * formatDate('2026-09-21T00:00:00.000000Z') // returns "21 sep 2026"
+ * 
+ * @param {string|Date} val - ISO date string or Date object
+ * @returns {string} Formatted localized date (e.g. "21 sep 2026")
+ */
+export function formatDate(val) {
+  if (!val) return '—'
+  const str = String(val).split('T')[0]
+  const parts = str.split('-')
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10)
+    const month = parseInt(parts[1], 10) - 1
+    const day = parseInt(parts[2], 10)
+    const d = new Date(year, month, day)
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    }
+  }
+  const d = new Date(val)
+  if (isNaN(d.getTime())) return String(val)
+  return d.toLocaleDateString('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+

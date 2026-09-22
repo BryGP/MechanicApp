@@ -1,92 +1,77 @@
-# MechanicApp � Backend
+﻿# MechanicApp — Backend REST API (Laravel 11)
 
-Laravel 12 REST API for the MechanicApp workshop management system.
+Servicio backend desacoplado que gestiona la lógica de negocio, persistencia relacional, integridad transaccional y seguridad administrativa del ERP para talleres mecánicos.
 
 ---
 
-## Directory Structure
+## 🏛️ Arquitectura y Componentes Clave
+
+El backend sigue las mejores prácticas de la arquitectura moderna en Laravel 11:
+
+### 1. Form Requests Dedicados (`app/Http/Requests`)
+Desacoplan la validación de los controladores y previenen inconsistencias:
+- **`StoreProductRequest` / `UpdateProductRequest`:** Validación estricta para refacciones físicas vs servicios de mano de obra (SKU único, stock mínimo, precio requerido).
+- **`StoreOrderRequest` / `UpdateOrderRequest`:** Validación de cliente, vehículo, partidas de items y gancho `withValidator()` para prevenir órdenes duplicadas enviadas accidentalmente en ráfaga.
+- **`StoreExpenseRequest`:** Validación de concepto, categoría contable, importe, método de pago y prevención de egresos duplicados.
+
+### 2. API Resources / DTOs (`app/Http/Resources`)
+Capa de transformación que asegura contratos JSON estrictos y tipados:
+- **`ProductResource`:** Formateo tipado numérico explícito (`stock`, `price`, `min_stock`) y estados computados (`stock_status`, `is_service`).
+- **`OrderResource` & `OrderItemResource`:** Serialización relacional de órdenes con sus partidas anidadas e importes flotantes formateados.
+- **`ExpenseResource`:** Serialización tipada de partidas contables de egreso.
+- `JsonResource::withoutWrapping()` configurado en `AppServiceProvider` para entregar respuestas directas y limpias sin empaquetado innecesario.
+
+### 3. Controladores Esbeltos (`app/Http/Controllers`)
+- **`ProductController`:** CRUD de catálogo de refacciones y servicios de mano de obra.
+- **`OrderController`:** Orquestación transaccional (`DB::transaction`) para crear órdenes, calcular subtotales y descontar inventario de forma atómica.
+- **`ExpenseController`:** Control del libro diario contable y flujo de caja operativo.
+- **`ReportController`:** Motor de ejecución de consultas SQL analíticas.
+
+### 4. Seguridad Full-Stack: Middleware de PIN (`app/Http/Middleware`)
+- **`VerifyAdminPin` (alias `'admin.pin'`):** Inspecciona la cabecera HTTP `X-Admin-Pin` en operaciones de alto valor destructivo (`DELETE /api/orders/{id}` y `DELETE /api/expenses/{id}`). Rechaza con código **`403 Forbidden`** ante cualquier intento no autorizado.
+- **Pruebas Automatizadas (`tests/Feature/AdminPinSecurityTest.php`):** Suite completa con aserciones en memoria que validan el rechazo 403 y la autorización correcta 200.
+
+---
+
+## 📂 Estructura de Directorios
 
 ```
 backend/
-+-- app/
-�   +-- Http/Controllers/
-�   �   +-- ProductController.php   # CRUD for inventory products
-�   �   +-- OrderController.php     # CRUD for service orders (with stock logic)
-�   +-- Models/
-�       +-- Product.php             # Inventory item model
-�       +-- Order.php               # Service order model (has many OrderItems)
-�       +-- OrderItem.php           # Line item model (belongs to Order + Product)
-�       +-- User.php                # Auth user model (Sanctum-ready)
-+-- database/
-�   +-- migrations/                 # Schema definitions (run in order)
-�   +-- seeders/
-�       +-- DatabaseSeeder.php      # Master seeder entry point
-�       +-- ProductSeeder.php       # Sample workshop products
-+-- routes/
-�   +-- api.php                     # All API endpoints (/api/*)
-�   +-- web.php                     # Web routes (unused in API-only mode)
-+-- config/
-    +-- cors.php                    # CORS: allows all origins (open for dev)
-    +-- sanctum.php                 # API token authentication config
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/       # ProductController, OrderController, ExpenseController, ReportController
+│   │   ├── Middleware/        # VerifyAdminPin (Protección de endpoints DELETE)
+│   │   ├── Requests/          # Form Requests dedicados (Validación + Anti-duplicados)
+│   │   └── Resources/         # API Resources (DTOs tipados)
+│   ├── Models/                # Product, Order, OrderItem, Expense, ReportTemplate, User
+│   └── Providers/             # AppServiceProvider (Configuración JsonResource)
+├── bootstrap/                 # bootstrap/app.php (Registro de alias de middleware)
+├── database/
+│   ├── migrations/            # Esquemas de base de datos e índices compuestos de alto rendimiento
+│   └── seeders/               # Seeds y scripts SQL de simulación operativa mensual
+├── routes/
+│   └── api.php                # Definición de rutas REST y middleware de seguridad
+└── tests/
+    └── Feature/               # Tests de integración y seguridad (AdminPinSecurityTest)
 ```
 
 ---
 
-## Key Commands
+## ⚡ Comandos Esenciales
 
 ```bash
-# Install dependencies
-composer install
-
-# Generate application encryption key
-php artisan key:generate
-
-# Run all database migrations
-php artisan migrate
-
-# Seed with sample data (3 products)
-php artisan db:seed
-
-# Start the development server (port 8000)
+# Iniciar servidor de desarrollo API (puerto 8000)
 php artisan serve
 
-# Open interactive PHP REPL (query models directly)
+# Ejecutar migraciones de base de datos
+php artisan migrate
+
+# Ejecutar suite de pruebas unitarias y de seguridad (Feature Tests)
+php artisan test
+
+# Consola interactiva para inspección directa de modelos
 php artisan tinker
 
-# List all registered API routes
+# Listar todas las rutas registradas en la API
 php artisan route:list --path=api
 ```
-
----
-
-## Environment Variables (.env)
-
-| Variable        | Description                        | Default           |
-|-----------------|------------------------------------|-------------------|
-| APP_KEY         | Laravel encryption key (auto-gen)  | �                 |
-| DB_CONNECTION   | Database driver                    | mysql             |
-| DB_HOST         | Database host                      | 127.0.0.1         |
-| DB_PORT         | Database port                      | 3306              |
-| DB_DATABASE     | Database name                      | mechanic_app      |
-| DB_USERNAME     | Database user                      | root              |
-| DB_PASSWORD     | Database password                  | (empty in XAMPP)  |
-
----
-
-## Business Logic Notes
-
-### Order Creation (POST /api/orders)
-The entire order creation runs inside a **database transaction**:
-1. Create the parent `Order` with `status = open` and `total = 0`
-2. For each item: fetch product ? snapshot price ? decrement stock ? create `OrderItem`
-3. Update `Order.total` with the sum of all subtotals
-4. If any step fails, the entire transaction is rolled back
-
-### Stock Management
-- Stock is decremented automatically when an order is created
-- There is no automatic stock restoration on order deletion (handle manually)
-- Products with `stock < min_stock` are candidates for reorder alerts (frontend can check this)
-
-### CORS
-Currently configured to allow all origins (`*`) in `config/cors.php`.
-Restrict this to your frontend domain in production.

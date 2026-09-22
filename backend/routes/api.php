@@ -7,6 +7,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\AdminPinController;
+use App\Http\Controllers\InvoiceController;
 
 /**
  * ============================================================================
@@ -89,3 +90,13 @@ Route::post('expenses',             [ExpenseController::class, 'store']);
 
 // Eliminación de partidas contables protegida por PIN de Administrador
 Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->middleware('admin.pin');
+
+// =========================================================================
+// SECCIÓN 6: FACTURACIÓN ELECTRÓNICA Y COMPROBANTES FISCALES (CFDI 4.0)
+// =========================================================================
+Route::get('invoices/catalogs',          [InvoiceController::class, 'catalogs']);
+Route::get('invoices',                   [InvoiceController::class, 'index']);
+Route::post('invoices',                  [InvoiceController::class, 'store']);
+Route::get('invoices/{invoice}',         [InvoiceController::class, 'show']);
+Route::get('invoices/{invoice}/xml',     [InvoiceController::class, 'downloadXml']);
+Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->middleware('admin.pin');

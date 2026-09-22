@@ -175,20 +175,23 @@ p {
 }
 
 /* Ghost / Secondary Neutral Button */
-.btn-ghost {
+.btn-ghost,
+.btn-secondary {
   background: transparent;
   color: var(--text-muted);
   border: 1px solid var(--border);
 }
 
-.btn-ghost:hover {
+.btn-ghost:hover,
+.btn-secondary:hover {
   background: var(--bg-hover);
   color: var(--text);
   border-color: rgba(148, 163, 184, 0.25);
   transform: translateY(-1px);
 }
 
-.btn-ghost:active {
+.btn-ghost:active,
+.btn-secondary:active {
   transform: scale(0.975);
 }
 
@@ -956,4 +959,112 @@ p {
 
 .animate-fade-in-up {
   animation: fadeInUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ==============================================================================
+   15. GLOBAL DASHBOARD & UTILITY HELPERS
+   ============================================================================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.text-accent { color: var(--accent); }
+.text-muted { color: var(--text-muted); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.uppercase { text-transform: uppercase; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+
+/* ==============================================================================
+   16. PRINT ENGINE & CFDI SAT PRINT ISOLATION
+   ============================================================================== */
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 8mm 8mm 8mm 8mm;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Completely hide the main application shell when printing documents */
+  body:has(.modal-backdrop) #app,
+  body.is-printing-invoice #app,
+  body:has(#sat-invoice-print-area) #app {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* When printing, remove modal framing, dark backdrops and fixed positioning */
+  body:has(.modal-backdrop) .modal-backdrop,
+  body.is-printing-invoice .modal-backdrop {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    min-height: auto !important;
+  }
+
+  body:has(.modal-backdrop) .modal-card--xl,
+  body.is-printing-invoice .modal-card--xl {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body:has(.modal-backdrop) .printable-sheet,
+  body.is-printing-invoice .printable-sheet {
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
 }

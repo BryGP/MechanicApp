@@ -25,6 +25,8 @@ export function formatCurrency(val) {
   })
 }
 
+export const formatMoney = formatCurrency
+
 /**
  * Formats an integer value with localized thousands separators.
  * 

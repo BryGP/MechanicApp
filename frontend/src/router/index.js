@@ -11,6 +11,7 @@ import ProductsView from '../views/ProductsView.vue'
 import OrdersView from '../views/OrdersView.vue'
 import AccountingView from '../views/AccountingView.vue'
 import ReportsView from '../views/ReportsView.vue'
+import InvoicingView from '../views/InvoicingView.vue'
 
 /**
  * Application route definitions mapping URL paths to single-page view components.
@@ -46,6 +47,12 @@ const routes = [
     name: 'Reports',
     component: ReportsView,
     meta: { title: 'Reportes y Analíticas de Taller' },
+  },
+  {
+    path: '/facturacion',
+    name: 'Invoicing',
+    component: InvoicingView,
+    meta: { title: 'Facturación Electrónica (CFDI 4.0)' },
   },
 ]
 

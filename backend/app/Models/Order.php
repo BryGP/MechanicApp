@@ -73,6 +73,22 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * Associated CFDI 4.0 invoices issued for this order.
+     */
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * Current active (vigente) CFDI 4.0 invoice for this order.
+     */
+    public function activeInvoice()
+    {
+        return $this->hasOne(Invoice::class)->where('status', 'vigente');
+    }
+
     // =========================================================================
     // SECCIÓN 3: SCOPES LOCALES DE CONSULTA Y FILTRADO
     // =========================================================================

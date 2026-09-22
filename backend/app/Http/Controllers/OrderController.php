@@ -55,7 +55,7 @@ class OrderController extends Controller
      */
     public function index()
     {
-        return OrderResource::collection(Order::with('items.product')->latest()->get());
+        return OrderResource::collection(Order::with(['items.product', 'invoices'])->latest()->get());
     }
 
     // =========================================================================

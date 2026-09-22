@@ -1,4 +1,4 @@
-﻿# MechanicApp — Workshop Management & ERP System
+# MechanicApp — Workshop Management & ERP System
 
 Enterprise resource planning (ERP) and operational management system designed for automotive service centers specializing in internal combustion engine (ICE) vehicles, electric vehicles (EV), and classic collector automobiles. Built on a decoupled full-stack architecture featuring a robust Laravel 11 REST API backend and a responsive Vue 3 Single Page Application (SPA).
 
@@ -23,6 +23,8 @@ Enterprise resource planning (ERP) and operational management system designed fo
 
 ### 4. Accounting and Operational Finance
 - Operational Expense Ledger: Structured recording of workshop expenditures categorized into Payroll, Parts/Supplies, Tools/Equipment, Rent, Utilities, and Other Expenses, complete with payment methods and reference identifiers.
+- Modernized Expense Intake Modal: Two-panel workflow featuring custom SVG vector iconography, strict numeric input sanitization (blocking non-numeric signs and scientific notation), live cash flow debit preview banner, and an ISO 9001:2015 fat-finger safeguard capping individual entries at $1,000,000.00 MXN.
+- Fiscal Compliance Guidance: Contextual warnings alerting operators that cash payments exceeding $2,000.00 MXN are not tax-deductible under Mexican SAT regulations (LISR Art. 27 Fracc. III).
 - Live Cash Flow Engine: Real-time calculation of Gross Service Revenue, Operational Expenses, Net Operating Profit, and Operating Margin percentage.
 - Animated Analytics Suite:
   - Expense Category Breakdown: Proportional horizontal bar charts with fluid cubic-bezier CSS width transitions.
@@ -35,9 +37,11 @@ Enterprise resource planning (ERP) and operational management system designed fo
 - Spreadsheet Export: Direct tabular clipboard copying formatted for immediate integration into Excel or Google Sheets.
 - Executive Performance Summaries: Automated valuation of dead inventory, critical reorder schedules, and financial margin analysis.
 
-### 6. Full-Stack Access Control and PIN Security
-- Role Segregation: Non-administrative Operator mode for daily intake operations and elevated Administrator mode secured by cryptographic PIN verification.
-- Destructive Action Protection: High-privilege actions (work order deletion, financial ledger removal) require modal PIN verification in the client interface and are validated over HTTP via the backend VerifyAdminPin middleware (X-Admin-Pin header) with 403 Forbidden enforcement.
+### 6. Full-Stack Access Control and Dynamic PIN Security
+- Role Segregation: Non-administrative Operator mode for daily intake operations and elevated Administrator mode secured by numeric PIN authorization.
+- Persistent Multi-Tier PIN Architecture: Centralized AdminPinService managing persistent storage on disk (storage/app/admin_pin.txt), in-memory cache, and fallback defaults.
+- Real-Time Credential Rotation & Reconciliation: Dedicated REST endpoints (/api/admin/pin/change, /api/admin/pin/sync, /api/admin/pin/verify) providing seamless client-server credential synchronization across browser sessions.
+- Destructive Action Protection: High-privilege actions (work order deletion, financial ledger removal) require modal authorization in the client interface and are validated over HTTP via the backend VerifyAdminPin middleware (X-Admin-Pin header) with 403 Forbidden enforcement.
 
 ---
 
@@ -97,6 +101,9 @@ Composite indexes implemented to optimize high-frequency filtering and analytica
 | Expenses | GET | /api/expenses | Retrieve operational expenses ledger | Public |
 | | POST | /api/expenses | Record expense via StoreExpenseRequest | Public |
 | | DELETE | /api/expenses/{id} | Remove accounting expense entry | Protected (Requires X-Admin-Pin) |
+| Admin PIN | POST | /api/admin/pin/verify | Validate administrator credentials | Public |
+| | POST | /api/admin/pin/change | Securely rotate administrator security PIN | Public |
+| | POST | /api/admin/pin/sync | Client-server credential reconciliation | Public |
 | Reports | GET | /api/reports | List analytical report templates | Public |
 | | POST | /api/reports/{id}/run | Execute dynamic SQL business query | Public |
 

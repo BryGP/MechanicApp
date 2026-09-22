@@ -36,7 +36,7 @@ class StoreExpenseRequest extends FormRequest
         return [
             'concept'        => 'required|string|max:255',
             'category'       => 'required|string|max:100',
-            'amount'         => 'required|numeric|min:0.01',
+            'amount'         => 'required|numeric|min:0.01|max:1000000',
             'payment_method' => 'nullable|string|max:50',
             'reference'      => 'nullable|string|max:100',
             'expense_date'   => 'required|date',
@@ -55,6 +55,7 @@ class StoreExpenseRequest extends FormRequest
             'category.required'     => 'La categoría contable es obligatoria.',
             'amount.required'       => 'El monto del gasto es obligatorio.',
             'amount.min'            => 'El importe debe ser mayor a $0.00.',
+            'amount.max'            => 'El importe máximo permitido por asiento contable es de $1,000,000.00 MXN (Control interno anti-error de dedo).',
             'expense_date.required' => 'La fecha de aplicación contable es obligatoria.',
             'expense_date.date'     => 'El formato de fecha no es válido.',
         ];

@@ -6,6 +6,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\AdminPinController;
 
 /**
  * ============================================================================
@@ -38,6 +39,13 @@ Route::get('/user', function (Request $request) {
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
+
+// =========================================================================
+// SECCIÓN 1.1: GESTIÓN Y AUTORIZACIÓN DE PIN DE ADMINISTRADOR
+// =========================================================================
+Route::post('admin/pin/verify', [AdminPinController::class, 'verify']);
+Route::post('admin/pin/change', [AdminPinController::class, 'change']);
+Route::post('admin/pin/sync',   [AdminPinController::class, 'sync']);
 
 // =========================================================================
 // SECCIÓN 2: INVENTARIO DE REFACCIONES Y CATÁLOGO DE SERVICIOS

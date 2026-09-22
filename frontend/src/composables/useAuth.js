@@ -6,6 +6,7 @@
  */
 
 import { ref } from 'vue'
+import { apiClient } from '../utils/apiClient'
 
 /** Storage key for the customized administrator PIN */
 const ADMIN_PIN_KEY = 'mechanic_admin_pin'
@@ -24,6 +25,24 @@ const DEFAULT_PIN = '1234'
 const isAdmin = ref(localStorage.getItem(ADMIN_SESSION_KEY) === 'true')
 
 /**
+ * Automatically reconciles client-side customized PIN with backend storage upon loading.
+ * Ensures the backend acknowledges custom PINs established across sessions.
+ */
+async function syncWithBackend() {
+  const localPin = localStorage.getItem(ADMIN_PIN_KEY)
+  if (localPin && localPin !== DEFAULT_PIN) {
+    try {
+      await apiClient.post('/admin/pin/sync', { pin: localPin })
+    } catch {
+      // Non-blocking background sync
+    }
+  }
+}
+
+// Trigger reconciliation on module initialization
+syncWithBackend()
+
+/**
  * Composable for managing user roles, PIN authorization, and administrator sessions.
  * 
  * @returns {Object} Authentication controls and reactive state
@@ -31,7 +50,7 @@ const isAdmin = ref(localStorage.getItem(ADMIN_SESSION_KEY) === 'true')
  * @property {function(string): boolean} verifyPin - Validates a given PIN against the stored PIN
  * @property {function(string): boolean} loginAdmin - Authenticates and activates admin mode
  * @property {function(): void} logoutAdmin - Deactivates admin mode and clears session
- * @property {function(string, string): boolean} updatePin - Changes the admin PIN after verification
+ * @property {function(string, string): Promise<boolean>} updatePin - Changes the admin PIN on server and client
  * @property {string} defaultPin - The initial system PIN (1234)
  */
 export function useAuth() {
@@ -80,16 +99,31 @@ export function useAuth() {
   }
 
   /**
-   * Updates the Administrator PIN to a new value after verifying the current PIN.
+   * Updates the Administrator PIN on both backend server storage and client localStorage.
    * 
    * @param {string|number} currentPin - The current active PIN for verification
    * @param {string|number} newPin - The new PIN (minimum 4 characters)
-   * @returns {boolean} True if updated successfully, false if current PIN invalid or new PIN malformed
+   * @returns {Promise<boolean>} True if updated successfully
+   * @throws {Error} If current PIN is invalid or backend communication fails
    */
-  function updatePin(currentPin, newPin) {
-    if (!verifyPin(currentPin)) return false
-    if (!newPin || String(newPin).trim().length < 4) return false
-    localStorage.setItem(ADMIN_PIN_KEY, String(newPin).trim())
+  async function updatePin(currentPin, newPin) {
+    if (!verifyPin(currentPin)) {
+      throw new Error('El PIN actual es incorrecto.')
+    }
+    if (!newPin || String(newPin).trim().length < 4) {
+      throw new Error('El nuevo PIN debe tener al menos 4 dígitos.')
+    }
+
+    const cleanCurrent = String(currentPin).trim()
+    const cleanNew = String(newPin).trim()
+
+    // Synchronize credential rotation with the backend REST API
+    await apiClient.post('/admin/pin/change', {
+      current_pin: cleanCurrent,
+      new_pin: cleanNew,
+    })
+
+    localStorage.setItem(ADMIN_PIN_KEY, cleanNew)
     return true
   }
 
@@ -99,6 +133,7 @@ export function useAuth() {
     loginAdmin,
     logoutAdmin,
     updatePin,
+    syncWithBackend,
     defaultPin: DEFAULT_PIN,
   }
 }

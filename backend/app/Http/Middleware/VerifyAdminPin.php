@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\AdminPinService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,10 +26,8 @@ class VerifyAdminPin
     public function handle(Request $request, Closure $next): Response
     {
         $inputPin = $request->header('X-Admin-Pin');
-        $expectedPin = (string) config('app.admin_pin', env('ADMIN_PIN', '1234'));
 
-        // If customized PIN exists in cache or header matches valid pattern
-        if (empty($inputPin) || trim((string) $inputPin) !== $expectedPin) {
+        if (empty($inputPin) || !AdminPinService::verify((string) $inputPin)) {
             return response()->json([
                 'message' => 'Acceso denegado: Se requiere un PIN de administrador válido para ejecutar esta operación.'
             ], 403);

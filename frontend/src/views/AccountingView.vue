@@ -184,65 +184,188 @@
     <FinancialAnalyticsSection />
 
     <!-- Modal Registrar Egreso -->
-    <Modal v-model="showModal" title="Registrar nuevo egreso del taller">
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Concepto del gasto *</label>
-          <input
-            v-model="form.concept"
-            class="form-input"
-            placeholder="Ej. Compra lote 20 filtros de aceite a Distribuidora Sur"
-          />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Categoría *</label>
-            <select v-model="form.category" class="form-select">
-              <option value="refacciones">Refacciones e Insumos</option>
-              <option value="herramientas">Herramientas y Equipo</option>
-              <option value="nomina">Nómina de Mecánicos</option>
-              <option value="renta">Renta del Taller</option>
-              <option value="servicios">Servicios (Luz/Agua/Net)</option>
-              <option value="otros">Otros Gastos</option>
-            </select>
+    <Modal v-model="showModal" :wide="true">
+      <template #header>
+        <div class="expense-modal-header">
+          <div class="expense-modal-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16l3-1.5 3 1.5 3-1.5 3 1.5 3-1.5 3 1.5V4a2 2 0 0 0-2-2z"/>
+              <line x1="9" y1="9" x2="15" y2="9"/>
+              <line x1="9" y1="13" x2="15" y2="13"/>
+              <line x1="9" y1="17" x2="13" y2="17"/>
+            </svg>
           </div>
+          <div>
+            <div class="expense-modal-title">Registrar Nuevo Egreso del Taller</div>
+            <div class="expense-modal-subtitle">Asentamiento contable de gastos operativos, insumos, nómina y servicios</div>
+          </div>
+        </div>
+      </template>
+
+      <div class="modal-body expense-modal-body">
+        <!-- Panel 1: Concepto y Clasificación del Gasto -->
+        <div class="expense-panel">
+          <div class="expense-panel-header">
+            <span class="expense-panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              Concepto y Clasificación del Gasto
+            </span>
+            <span class="req-legend"><span class="req-star">*</span> Campos obligatorios</span>
+          </div>
+
           <div class="form-group">
-            <label class="form-label">Monto ($) *</label>
+            <label class="form-label">
+              Concepto o Justificación del Gasto <span class="req-star">*</span>
+            </label>
             <input
-              v-model.number="form.amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              class="form-input"
-              placeholder="0.00"
+              v-model="form.concept"
+              class="form-input form-input-lg"
+              :class="{ 'input-has-error': submitted && !form.concept.trim() }"
+              placeholder="Ej. Compra lote 20 filtros de aceite a Distribuidora Sur, Pago de nómina..."
             />
+            <span v-if="submitted && !form.concept.trim()" class="form-field-error">
+              El concepto o justificación del gasto es obligatorio
+            </span>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">
+                Categoría Operativa <span class="req-star">*</span>
+              </label>
+              <select v-model="form.category" class="form-select form-input-lg">
+                <option value="refacciones">Refacciones e Insumos</option>
+                <option value="herramientas">Herramientas y Equipo</option>
+                <option value="nomina">Nómina de Mecánicos</option>
+                <option value="renta">Renta del Taller</option>
+                <option value="servicios">Servicios (Luz / Agua / Internet)</option>
+                <option value="otros">Otros Gastos Operativos</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Folio / Factura o Ticket <span class="form-label-hint">(Opcional)</span>
+              </label>
+              <input
+                v-model="form.reference"
+                class="form-input form-input-lg"
+                placeholder="Ej. FAC-8921, TK-4412 o Folio interno"
+              />
+              <span class="field-hint">Referencia física o comprobante para auditoría.</span>
+            </div>
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Método de pago</label>
-            <select v-model="form.payment_method" class="form-select">
-              <option value="efectivo">Efectivo</option>
-              <option value="transferencia">Transferencia SPEI</option>
-              <option value="tarjeta">Tarjeta Débito/Crédito</option>
-            </select>
+        <!-- Panel 2: Desglose Financiero y Forma de Pago -->
+        <div class="expense-panel">
+          <div class="expense-panel-header">
+            <span class="expense-panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              Importe Financiero y Dispersión
+            </span>
+            <span class="form-label-hint">Asiento contable directo</span>
           </div>
-          <div class="form-group">
-            <label class="form-label">Folio / Factura (Opcional)</label>
-            <input v-model="form.reference" class="form-input" placeholder="FAC-8921 o Ticket" />
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label class="form-label">
+                Monto del Egreso ($) <span class="req-star">*</span>
+              </label>
+              <div class="currency-input-wrap">
+                <span class="currency-prefix">$</span>
+                <input
+                  :value="displayAmount"
+                  type="text"
+                  inputmode="decimal"
+                  class="form-input form-input-lg currency-field"
+                  :class="{ 'input-has-error': (submitted && (!form.amount || form.amount <= 0)) || (form.amount && form.amount > MAX_EXPENSE_LIMIT) }"
+                  placeholder="0.00"
+                  maxlength="10"
+                  @keydown="handleAmountKeydown"
+                  @input="handleAmountInput"
+                  @paste="handleAmountPaste"
+                />
+                <span class="currency-suffix">MXN</span>
+              </div>
+              <span v-if="submitted && (!form.amount || form.amount <= 0)" class="form-field-error">
+                Ingresa un monto válido mayor a $0.00
+              </span>
+              <span v-else-if="form.amount && form.amount > MAX_EXPENSE_LIMIT" class="form-field-error">
+                Tope excedido: Máximo $1,000,000.00 MXN por transacción.
+              </span>
+              <span v-else class="field-hint">
+                Máx. $1,000,000.00 MXN (Control interno anti-error de dedo / ISO 9001).
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Método de Liquidación <span class="req-star">*</span>
+              </label>
+              <select v-model="form.payment_method" class="form-select form-input-lg">
+                <option value="transferencia">Transferencia SPEI</option>
+                <option value="efectivo">Efectivo en Caja</option>
+                <option value="tarjeta">Tarjeta Débito / Crédito</option>
+              </select>
+              <div v-if="form.payment_method === 'efectivo' && form.amount > 2000" class="fiscal-tip">
+                Aviso SAT (Art. 27 LISR): Egresos en efectivo mayores a $2,000 no son deducibles.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Fecha de Egreso <span class="req-star">*</span>
+              </label>
+              <input
+                v-model="form.expense_date"
+                type="date"
+                class="form-input form-input-lg"
+                :class="{ 'input-has-error': submitted && !form.expense_date }"
+              />
+              <span v-if="submitted && !form.expense_date" class="form-field-error">
+                La fecha del egreso es requerida
+              </span>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Fecha de egreso *</label>
-            <input v-model="form.expense_date" type="date" class="form-input" />
+        </div>
+
+        <!-- Banner de Impacto Contable en Caja -->
+        <div class="expense-impact-banner">
+          <div class="impact-info">
+            <div class="impact-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px">
+                <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+                <polyline points="17 18 23 18 23 12"/>
+              </svg>
+              <span>Impacto en Flujo de Efectivo</span>
+            </div>
+            <span class="impact-subtitle">
+              Se asentará como costo operativo bajo <strong>{{ categoryLabel(form.category) }}</strong> vía <strong>{{ paymentMethodLabel(form.payment_method) }}</strong>
+            </span>
+          </div>
+          <div class="impact-amount-box">
+            <span class="impact-currency">MXN</span>
+            <span class="impact-value">-{{ formatCurrency(form.amount || 0) }}</span>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" @click="showModal = false">Cancelar</button>
-        <button class="btn btn-primary" @click="save" :disabled="loading">
-          {{ loading ? 'Guardando...' : 'Registrar egreso' }}
+
+      <div class="modal-footer expense-modal-footer">
+        <button class="btn btn-ghost" @click="showModal = false" type="button">Cancelar</button>
+        <button class="btn btn-primary btn-submit-expense" @click="save" :disabled="loading" type="button">
+          <svg v-if="!loading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span>{{ loading ? 'Asentando egreso...' : 'Registrar Egreso' }}</span>
         </button>
       </div>
     </Modal>
@@ -329,7 +452,7 @@ const today = new Date().toISOString().split('T')[0]
 const empty = () => ({
   concept: '',
   category: 'refacciones',
-  amount: 0,
+  amount: null,
   payment_method: 'transferencia',
   reference: '',
   expense_date: today,
@@ -337,6 +460,18 @@ const empty = () => ({
 
 /** Reactive form model for expense creation */
 const form = ref(empty())
+
+/** Form submission attempt flag for reactive inline validation feedback */
+const submitted = ref(false)
+
+/** Maximum allowable single transaction expense ceiling ($1,000,000.00 MXN) */
+const MAX_EXPENSE_LIMIT = 1000000
+
+/** String buffer for numeric input to smoothly retain decimals and prevent browser quirks */
+const amountInput = ref('')
+
+/** Computed display value for the currency input */
+const displayAmount = computed(() => amountInput.value)
 
 /**
  * Filtered and sorted collection of operational expenses.
@@ -439,10 +574,153 @@ function categoryLabel(cat) {
 }
 
 /**
+ * Maps payment method identifiers to human-readable labels.
+ * @param {string} method - Payment method key
+ * @returns {string} Human-readable label
+ */
+function paymentMethodLabel(method) {
+  const map = {
+    transferencia: 'Transferencia SPEI',
+    efectivo: 'Efectivo en Caja',
+    tarjeta: 'Tarjeta Débito / Crédito',
+  }
+  return map[method] || method
+}
+
+/**
+ * Intercepts keyboard events to strictly permit numeric digits (0-9) and a single decimal point.
+ * Blocks negative signs (-), plus signs (+), scientific notation (e/E), and invalid symbols.
+ * @param {KeyboardEvent} e - Keydown event
+ */
+function handleAmountKeydown(e) {
+  // Reject +, -, e, E, comma, and space
+  if (['+', '-', 'e', 'E', ',', ' '].includes(e.key)) {
+    e.preventDefault()
+    return
+  }
+
+  // Allow navigation and editing control keys
+  const allowedKeys = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Escape',
+    'Enter',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+  ]
+  if (allowedKeys.includes(e.key)) return
+
+  // Allow standard clipboard and selection keyboard shortcuts (Ctrl/Cmd + A, C, V, X, Z)
+  if (e.ctrlKey || e.metaKey) return
+
+  // Decimal point validation: only allow one dot
+  if (e.key === '.') {
+    if (amountInput.value.includes('.')) {
+      e.preventDefault()
+    }
+    return
+  }
+
+  // Reject any non-digit character
+  if (!/^[0-9]$/.test(e.key)) {
+    e.preventDefault()
+  }
+}
+
+/**
+ * Sanitizes input value to enforce pure numeric decimal format and cap at operational maximum.
+ * Prevents "fat-finger" errors according to ISO 9001 and financial risk controls.
+ * @param {InputEvent} event - Input change event
+ */
+function handleAmountInput(event) {
+  let val = event.target.value.replace(/[^0-9.]/g, '')
+
+  // Enforce single decimal point
+  const parts = val.split('.')
+  if (parts.length > 2) {
+    val = parts[0] + '.' + parts.slice(1).join('')
+  }
+
+  // Limit decimals to 2 places (cents)
+  if (parts.length === 2 && parts[1].length > 2) {
+    val = parts[0] + '.' + parts[1].slice(0, 2)
+  }
+
+  // Prevent multiple leading zeroes
+  if (parts[0].length > 1 && parts[0].startsWith('0') && !parts[0].startsWith('0.')) {
+    val = String(parseInt(parts[0], 10)) + (parts.length > 1 ? '.' + parts[1] : '')
+  }
+
+  if (val === '') {
+    amountInput.value = ''
+    form.value.amount = null
+    event.target.value = ''
+    return
+  }
+
+  let num = parseFloat(val)
+  if (isNaN(num)) {
+    amountInput.value = ''
+    form.value.amount = null
+    event.target.value = ''
+    return
+  }
+
+  // Enforce maximum operational ceiling ($1,000,000.00 MXN)
+  if (num > MAX_EXPENSE_LIMIT) {
+    num = MAX_EXPENSE_LIMIT
+    val = String(MAX_EXPENSE_LIMIT)
+    toast.warning(`Tope máximo de $${MAX_EXPENSE_LIMIT.toLocaleString('es-MX')} MXN aplicado por control interno.`)
+  }
+
+  amountInput.value = val
+  form.value.amount = num
+  event.target.value = val
+}
+
+/**
+ * Sanitizes pasted clipboard data to ensure only pure numeric content is injected.
+ * @param {ClipboardEvent} e - Clipboard paste event
+ */
+function handleAmountPaste(e) {
+  e.preventDefault()
+  const text = (e.clipboardData || window.clipboardData).getData('text') || ''
+  let clean = text.replace(/[^0-9.]/g, '')
+  const parts = clean.split('.')
+  if (parts.length > 2) {
+    clean = parts[0] + '.' + parts.slice(1).join('')
+  }
+  if (parts.length === 2 && parts[1].length > 2) {
+    clean = parts[0] + '.' + parts[1].slice(0, 2)
+  }
+
+  if (!clean) return
+
+  let num = parseFloat(clean)
+  if (isNaN(num)) return
+
+  if (num > MAX_EXPENSE_LIMIT) {
+    num = MAX_EXPENSE_LIMIT
+    clean = String(MAX_EXPENSE_LIMIT)
+    toast.warning(`Tope máximo de $${MAX_EXPENSE_LIMIT.toLocaleString('es-MX')} MXN aplicado por control interno.`)
+  }
+
+  amountInput.value = clean
+  form.value.amount = num
+}
+
+/**
  * Opens the expense creation modal with fresh default values.
  */
 function openCreate() {
+  submitted.value = false
   form.value = empty()
+  amountInput.value = ''
   showModal.value = true
 }
 
@@ -450,8 +728,19 @@ function openCreate() {
  * Validates and submits a new expense record to the backend ledger.
  */
 async function save() {
-  if (!form.value.concept.trim()) return toast.error('El concepto del gasto es requerido')
-  if (!form.value.amount || form.value.amount <= 0) return toast.error('Ingresa un monto válido mayor a 0')
+  submitted.value = true
+  if (!form.value.concept.trim()) {
+    return toast.error('El concepto o justificación del gasto es requerido')
+  }
+  if (!form.value.amount || form.value.amount <= 0) {
+    return toast.error('Ingresa un monto de egreso válido mayor a $0.00')
+  }
+  if (form.value.amount > MAX_EXPENSE_LIMIT) {
+    return toast.error(`El monto no puede exceder el límite de $${MAX_EXPENSE_LIMIT.toLocaleString('es-MX')} MXN`)
+  }
+  if (!form.value.expense_date) {
+    return toast.error('La fecha del egreso es requerida')
+  }
   loading.value = true
   try {
     await store.createExpense(form.value)
@@ -531,5 +820,263 @@ async function remove(e) {
   text-transform: capitalize;
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+/* Custom Modal Header */
+.expense-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.expense-modal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(244, 63, 94, 0.12));
+  border: 1px solid rgba(244, 63, 94, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f87171;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);
+  flex-shrink: 0;
+}
+.expense-modal-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.expense-modal-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+/* Modal Body & Panel Layout */
+.expense-modal-body {
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 78vh;
+  overflow-y: auto;
+}
+.expense-panel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+.expense-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+.expense-panel-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.expense-panel-title svg {
+  color: #f87171;
+}
+.req-legend {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+.req-star {
+  color: #f87171;
+  font-weight: bold;
+}
+.form-label-hint {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Form Inputs & Sizing */
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap: 14px;
+}
+.form-input-lg {
+  height: 44px;
+  font-size: 0.95rem;
+  background: rgba(10, 15, 30, 0.8);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+.form-input-lg:focus {
+  background: #0d162f;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+.input-has-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3) !important;
+  background: rgba(239, 68, 68, 0.05) !important;
+}
+.form-field-error {
+  font-size: 0.78rem;
+  color: #fca5a5;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* Currency Input Styling */
+.currency-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.currency-prefix {
+  position: absolute;
+  left: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  pointer-events: none;
+  z-index: 1;
+}
+.currency-field {
+  padding-left: 28px !important;
+  padding-right: 52px !important;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  font-size: 1rem;
+}
+.currency-suffix {
+  position: absolute;
+  right: 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: rgba(148, 163, 184, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Cash Outflow Impact Banner */
+.expense-impact-banner {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(244, 63, 94, 0.03));
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.impact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.impact-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #f87171;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.impact-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.impact-subtitle strong {
+  color: #e2e8f0;
+}
+.impact-amount-box {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.impact-currency {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fca5a5;
+}
+.impact-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #f87171;
+  font-family: var(--font-mono, monospace);
+  letter-spacing: -0.02em;
+}
+
+/* Modal Footer & Buttons */
+.expense-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 1.25rem 1.75rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(10, 15, 30, 0.4);
+}
+.btn-submit-expense {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  font-weight: 700;
+}
+
+.fiscal-tip {
+  font-size: 0.74rem;
+  color: #fbbf24;
+  margin-top: 5px;
+  line-height: 1.35;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+@media (max-width: 680px) {
+  .form-row-2,
+  .form-row-3 {
+    grid-template-columns: 1fr;
+  }
+  .expense-impact-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .impact-amount-box {
+    align-self: flex-end;
+  }
 }
 </style>

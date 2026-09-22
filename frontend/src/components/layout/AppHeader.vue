@@ -152,8 +152,8 @@
       </div>
       <div class="modal-footer" style="padding:1rem 1.5rem;display:flex;justify-content:flex-end;gap:10px">
         <button class="btn btn-ghost" @click="showChangePinModal = false" type="button">Cancelar</button>
-        <button class="btn btn-primary" @click="handleChangePin" type="button" style="background:#f59e0b;border-color:#f59e0b;color:#0b0f19;font-weight:700">
-          Guardar Nuevo PIN
+        <button class="btn btn-primary" @click="handleChangePin" :disabled="savingPin" type="button" style="background:#f59e0b;border-color:#f59e0b;color:#0b0f19;font-weight:700">
+          {{ savingPin ? 'Guardando...' : 'Guardar Nuevo PIN' }}
         </button>
       </div>
     </Modal>
@@ -238,10 +238,13 @@ function openChangePinModal() {
   showChangePinModal.value = true
 }
 
+/** Loading state during PIN modification API request */
+const savingPin = ref(false)
+
 /**
  * Validates PIN requirements and persists the new administrator security PIN.
  */
-function handleChangePin() {
+async function handleChangePin() {
   changePinSubmitted.value = true
   const { currentPin, newPin, confirmPin } = changePinForm.value
 
@@ -255,14 +258,17 @@ function handleChangePin() {
     return toast.error('La confirmación no coincide con el nuevo PIN.')
   }
 
-  const success = updatePin(currentPin, newPin)
-  if (success) {
+  savingPin.value = true
+  try {
+    await updatePin(currentPin, newPin)
     toast.success('PIN de Administrador actualizado con éxito.')
     showChangePinModal.value = false
     changePinSubmitted.value = false
-  } else {
+  } catch (err) {
     changePinForm.value.currentPin = ''
-    toast.error('El PIN actual es incorrecto.')
+    toast.error(err.message || 'El PIN actual es incorrecto.')
+  } finally {
+    savingPin.value = false
   }
 }
 

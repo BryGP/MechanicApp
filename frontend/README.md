@@ -1,4 +1,4 @@
-﻿# MechanicApp — Frontend SPA (Vue 3 + Vite)
+# MechanicApp — Frontend SPA (Vue 3 + Vite)
 
 Modern Single Page Application (SPA) for the MechanicApp workshop management system, engineered with an elevated dark theme, responsive components, CSS micro-animations, and centralized state management.
 
@@ -49,9 +49,16 @@ frontend/
 - Proportional progress bar gauges featuring smooth cubic-bezier CSS animations expanding from 0% on mount.
 - Real-time aggregation of operational expenses by category, cost absorption rates, and vehicle repair volume.
 
-### 4. Role Authentication and Confirmation Dialogs (src/composables/)
+### 4. Role Authentication, Dynamic PIN Security, and Confirmation Dialogs
 - Header-based role indicator toggling between standard Operator and elevated Administrator privileges.
+- Client-Server PIN Reconciliation: useAuth automatically syncs custom client PINs with the Laravel backend upon startup via /api/admin/pin/sync, and communicates credential changes via /api/admin/pin/change.
 - Centralized asynchronous confirmation modal (ConfirmModal.vue) with masked PIN keypad, auto-clearing input on failure, and shake animation for destructive operations.
+
+### 5. Modernized Accounting and Expense Modal (src/views/AccountingView.vue)
+- Two-Panel Modal Architecture: Structured grouping dividing expense categorization from disbursement details.
+- Strict Numeric Input Sanitization: Filters keyboard input, clipboard pasting, and text changes to disallow symbols, signs (+/-), and scientific notation (e/E), enforcing valid numeric decimals up to two decimal places.
+- Operational Ceiling and Compliance Safeguards: Hard ceiling of $1,000,000.00 MXN preventing catastrophic fat-finger entries (ISO 9001:2015), accompanied by contextual SAT alerts (LISR Art. 27 Fracc. III) for non-deductible cash outlays exceeding $2,000.00 MXN.
+- Real-Time Impact Banner: Dynamic preview reflecting cash flow debit and operational category impact prior to persistence.
 
 ---
 

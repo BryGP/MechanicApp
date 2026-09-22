@@ -1,77 +1,77 @@
 ﻿# MechanicApp — Backend REST API (Laravel 11)
 
-Servicio backend desacoplado que gestiona la lógica de negocio, persistencia relacional, integridad transaccional y seguridad administrativa del ERP para talleres mecánicos.
+Decoupled backend service responsible for business logic execution, relational persistence, transactional integrity, and administrative authorization for the MechanicApp ERP system.
 
 ---
 
-## 🏛️ Arquitectura y Componentes Clave
+## Architectural Highlights
 
-El backend sigue las mejores prácticas de la arquitectura moderna en Laravel 11:
+The backend implementation adheres to modern enterprise Laravel 11 patterns:
 
-### 1. Form Requests Dedicados (`app/Http/Requests`)
-Desacoplan la validación de los controladores y previenen inconsistencias:
-- **`StoreProductRequest` / `UpdateProductRequest`:** Validación estricta para refacciones físicas vs servicios de mano de obra (SKU único, stock mínimo, precio requerido).
-- **`StoreOrderRequest` / `UpdateOrderRequest`:** Validación de cliente, vehículo, partidas de items y gancho `withValidator()` para prevenir órdenes duplicadas enviadas accidentalmente en ráfaga.
-- **`StoreExpenseRequest`:** Validación de concepto, categoría contable, importe, método de pago y prevención de egresos duplicados.
+### 1. Dedicated Form Requests (app/Http/Requests)
+Isolates request validation logic from controllers while providing integrity checks:
+- StoreProductRequest and UpdateProductRequest: Strict validation rules distinguishing physical replacement parts from intangible services (enforces unique SKU, stock thresholds, and required pricing).
+- StoreOrderRequest and UpdateOrderRequest: Validates customer metadata, vehicle strings, and item arrays. Includes an after-validation hook to prevent duplicate order submissions caused by rapid client-side retries.
+- StoreExpenseRequest: Enforces category enumerations, payment method constraints, positive numeric amounts, and duplicate submission prevention within short execution intervals.
 
-### 2. API Resources / DTOs (`app/Http/Resources`)
-Capa de transformación que asegura contratos JSON estrictos y tipados:
-- **`ProductResource`:** Formateo tipado numérico explícito (`stock`, `price`, `min_stock`) y estados computados (`stock_status`, `is_service`).
-- **`OrderResource` & `OrderItemResource`:** Serialización relacional de órdenes con sus partidas anidadas e importes flotantes formateados.
-- **`ExpenseResource`:** Serialización tipada de partidas contables de egreso.
-- `JsonResource::withoutWrapping()` configurado en `AppServiceProvider` para entregar respuestas directas y limpias sin empaquetado innecesario.
+### 2. API Resources and Data Transfer Objects (app/Http/Resources)
+Data transformation layer guaranteeing consistent, typed JSON contracts:
+- ProductResource: Enforces explicit numeric casting (stock as integer, price as float) and exposes computed flags such as stock_status and is_service.
+- OrderResource and OrderItemResource: Formats nested line items and provides normalized currency floats for reliable client-side rendering.
+- ExpenseResource: Standardizes expense serialization, date strings, and relational data.
+- Configured JsonResource::withoutWrapping() in AppServiceProvider to deliver clean array and object structures matching frontend store expectations.
 
-### 3. Controladores Esbeltos (`app/Http/Controllers`)
-- **`ProductController`:** CRUD de catálogo de refacciones y servicios de mano de obra.
-- **`OrderController`:** Orquestación transaccional (`DB::transaction`) para crear órdenes, calcular subtotales y descontar inventario de forma atómica.
-- **`ExpenseController`:** Control del libro diario contable y flujo de caja operativo.
-- **`ReportController`:** Motor de ejecución de consultas SQL analíticas.
+### 3. Slim Controllers (app/Http/Controllers)
+- ProductController: Manages inventory and services catalog CRUD operations.
+- OrderController: Coordinates atomic database transactions (DB::transaction) across orders, line items, and product stock decrements.
+- ExpenseController: Manages ledger entries and cash flow records.
+- ReportController: Dispatches predefined management SQL queries.
 
-### 4. Seguridad Full-Stack: Middleware de PIN (`app/Http/Middleware`)
-- **`VerifyAdminPin` (alias `'admin.pin'`):** Inspecciona la cabecera HTTP `X-Admin-Pin` en operaciones de alto valor destructivo (`DELETE /api/orders/{id}` y `DELETE /api/expenses/{id}`). Rechaza con código **`403 Forbidden`** ante cualquier intento no autorizado.
-- **Pruebas Automatizadas (`tests/Feature/AdminPinSecurityTest.php`):** Suite completa con aserciones en memoria que validan el rechazo 403 y la autorización correcta 200.
+### 4. Full-Stack Access Control: Admin PIN Middleware (app/Http/Middleware)
+- VerifyAdminPin (registered as 'admin.pin' alias): Intercepts incoming HTTP requests on destructive endpoints (DELETE /api/orders/{id} and DELETE /api/expenses/{id}). Rejects unauthorized requests with HTTP 403 Forbidden unless a valid X-Admin-Pin header matching the configured administration secret is provided.
+- Automated Test Suite (tests/Feature/AdminPinSecurityTest.php): Comprehensive in-memory SQLite feature tests confirming 403 Forbidden rejections on missing/invalid PINs and successful HTTP 200 execution when authorized.
 
 ---
 
-## 📂 Estructura de Directorios
+## Directory Structure
 
 ```
 backend/
 ├── app/
 │   ├── Http/
 │   │   ├── Controllers/       # ProductController, OrderController, ExpenseController, ReportController
-│   │   ├── Middleware/        # VerifyAdminPin (Protección de endpoints DELETE)
-│   │   ├── Requests/          # Form Requests dedicados (Validación + Anti-duplicados)
-│   │   └── Resources/         # API Resources (DTOs tipados)
+│   │   ├── Middleware/        # VerifyAdminPin (Admin PIN header inspection)
+│   │   ├── Requests/          # Dedicated Form Requests with anti-duplicate validation
+│   │   └── Resources/         # Typed API Resources (DTOs)
 │   ├── Models/                # Product, Order, OrderItem, Expense, ReportTemplate, User
-│   └── Providers/             # AppServiceProvider (Configuración JsonResource)
-├── bootstrap/                 # bootstrap/app.php (Registro de alias de middleware)
+│   └── Providers/             # AppServiceProvider (JsonResource global configuration)
+├── bootstrap/                 # Application bootstrap and middleware alias registrations
 ├── database/
-│   ├── migrations/            # Esquemas de base de datos e índices compuestos de alto rendimiento
-│   └── seeders/               # Seeds y scripts SQL de simulación operativa mensual
+│   ├── migrations/            # Table schemas and composite performance indexes
+│   └── seeders/               # Database seeders and monthly operation simulation scripts
 ├── routes/
-│   └── api.php                # Definición de rutas REST y middleware de seguridad
+│   └── api.php                # REST API routes and middleware definitions
 └── tests/
-    └── Feature/               # Tests de integración y seguridad (AdminPinSecurityTest)
+    └── Feature/               # Automated integration tests (AdminPinSecurityTest)
 ```
 
 ---
 
-## ⚡ Comandos Esenciales
+## Essential Commands
 
 ```bash
-# Iniciar servidor de desarrollo API (puerto 8000)
+# Start backend API development server (port 8000)
 php artisan serve
 
-# Ejecutar migraciones de base de datos
+# Execute database migrations
 php artisan migrate
 
-# Ejecutar suite de pruebas unitarias y de seguridad (Feature Tests)
+# Run feature and unit test suites
 php artisan test
 
-# Consola interactiva para inspección directa de modelos
+# Launch interactive tinker REPL
 php artisan tinker
 
-# Listar todas las rutas registradas en la API
+# Display all registered API endpoints
 php artisan route:list --path=api
 ```

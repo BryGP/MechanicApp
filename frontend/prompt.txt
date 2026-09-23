@@ -1,0 +1,48 @@
+Hola Antigravity. Acabo de migrar a este nuevo usuario de Windows en la misma PC y tengo el entorno e IDE desde cero. 
+El proyecto en el que estamos trabajando es **MechanicApp** (Taller Mecánico Automotriz), ubicado en `C:\proyectos\mechanic-app`.
+
+Por favor, realiza las siguientes tareas de configuración, verificación y puesta a punto:
+
+### 1. Contexto Arquitectónico del Proyecto
+- **Frontend:** Vue 3 + Vite + Pinia + Vue Router + Vanilla CSS (estilo moderno oscuro/glassmorphism).
+- **Backend:** Laravel 11 con base de datos SQLite (`backend/database/database.sqlite`).
+- **Módulos activos:**
+  1. **Dashboard:** Métricas operativas en tiempo real.
+  2. **Inventario (Productos & Servicios):** Catálogo de refacciones y mano de obra.
+  3. **Órdenes de Trabajo:** Ciclo de vida (Abierta, En proceso, Terminada, Entregada) con selector dinámico de refacciones/servicios y ticket imprimible.
+  4. **Contabilidad & Finanzas:** Ingresos vs Egresos operativos, validación fiscal Art. 27 LISR y gráficos animados.
+  5. **Reportes:** Analíticas operativas del taller.
+  6. **Facturación Electrónica (CFDI 4.0):** Emisión con PAC, validación anti-duplicados por orden, IVA 16% incluido con desglose inverso (`precio / 1.16`), QR oficial del SAT, representación impresa Letter con aislamiento de impresión (`@media print`) y cancelación protegida por PIN de Administrador (PIN por defecto: `1234`).
+- **Documentación:** Código 100% comentado con JSDoc y PHPDoc estándar.
+
+---
+
+### 2. Tareas de Configuración de Entorno e IDE que requiero:
+
+1. **Configuración Tipográfica del IDE (Geist Mono / JetBrains Mono):**
+   - Asegura que en la configuración de usuario del IDE (`settings.json`) y en `.vscode/settings.json` estén activadas las fuentes y ligaduras del proyecto:
+     ```json
+     {
+       "editor.fontFamily": "'Geist Mono', 'JetBrains Mono', Consolas, monospace",
+       "editor.fontLigatures": true,
+       "editor.fontSize": 14,
+       "terminal.integrated.fontFamily": "'Geist Mono', 'JetBrains Mono', Consolas, monospace",
+       "debug.console.fontFamily": "'Geist Mono', Consolas, monospace",
+       "chat.editor.fontFamily": "'Geist Mono', Consolas, monospace",
+       "scm.inputFontFamily": "'Geist Mono', Consolas, monospace"
+     }
+     ```
+   - (Nota: `Geist Mono` ya está instalado a nivel sistema en `C:\Windows\Fonts`).
+
+2. **Verificación de Herramientas Globales:**
+   - Comprueba que `php`, `composer`, `node` y `npm` sean detectados en la terminal del nuevo usuario (PHP está en `C:\xampp\php`, Composer en `C:\composer`, Node en `C:\Program Files\nodejs`).
+
+3. **Verificación de Pruebas y Compilación:**
+   - En `backend/`: ejecuta `php artisan test --filter=InvoiceTest` para validar SQLite y las 7 pruebas fiscales.
+   - En `frontend/`: ejecuta `npm run build` para validar que los 122 módulos compilen sin errores.
+
+4. **Levantar Servidores de Desarrollo:**
+   - Backend: `php artisan serve` en puerto 8000.
+   - Frontend: `npm run dev` en puerto 5173.
+
+Por favor haz las validaciones pertinentes y confírmame el estado para continuar programando.

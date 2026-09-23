@@ -85,14 +85,25 @@ class OrderController extends Controller
 
             $total = 0;
 
-            // Paso 2: Procesar cada partida, congelar precio y actualizar stock
-            foreach ($data['items'] as $it) {
-                $product  = Product::findOrFail($it['product_id']);
+            // Paso 2: Ordenar partidas por ID para prevenir deadlocks en transacciones concurrentes
+            $items = $data['items'];
+            usort($items, fn($a, $b) => $a['product_id'] <=> $b['product_id']);
+
+            // Paso 3: Procesar cada partida con bloqueo pesimista (Turnos concurrentes / lockForUpdate)
+            foreach ($items as $it) {
+                // lockForUpdate garantiza que solicitudes simultáneas hagan fila estricta (turnos)
+                $product  = Product::where('id', $it['product_id'])->lockForUpdate()->firstOrFail();
                 $unit     = $product->price;
                 $subtotal = $unit * $it['qty'];
 
                 // Descontar inventario físico solo si no es mano de obra/servicio
                 if (empty($product->is_service)) {
+                    if ($it['qty'] > $product->stock) {
+                        $disponible = max(0, (int) $product->stock);
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'items' => ["Stock insuficiente para \"{$product->name}\". Solicitadas: {$it['qty']} pzas, disponibles: {$disponible} pzas."],
+                        ]);
+                    }
                     $product->decrement('stock', $it['qty']);
                 }
 

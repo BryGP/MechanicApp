@@ -214,8 +214,9 @@ function openAdminModal() {
 /**
  * Validates the entered PIN and elevates current session to Administrator mode.
  */
-function handleAdminLogin() {
-  if (loginAdmin(adminPinInput.value)) {
+async function handleAdminLogin() {
+  const success = await loginAdmin(adminPinInput.value)
+  if (success) {
     toast.success('Modo Administrador activado exitosamente.')
     showAdminModal.value = false
   } else {

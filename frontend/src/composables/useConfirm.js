@@ -77,12 +77,13 @@ export function useConfirm() {
   }
 
   /**
-   * Resolves the current confirmation promise with true and hides the modal.
+   * Resolves the current confirmation promise with true/payload and hides the modal.
+   * @param {any} [payload=true] - Optional confirmation result or authorization token
    */
-  function handleConfirm() {
+  function handleConfirm(payload = true) {
     isOpen.value = false
     if (modalState.value.resolve) {
-      modalState.value.resolve(true)
+      modalState.value.resolve(payload)
       modalState.value.resolve = null
     }
   }

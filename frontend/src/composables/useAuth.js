@@ -2,89 +2,73 @@
  * @fileoverview Authentication and Authorization Composable
  * @module composables/useAuth
  * @description Provides reactive role management (Administrator vs. Operator)
- * and PIN-based security verification for high-privilege operations in the workshop.
+ * and secure PIN-based verification. Strictly avoids storing plaintext credentials
+ * in localStorage: uses backend verification, memory-only session tokens, and zero-leakage policies.
  */
 
 import { ref } from 'vue'
-import { apiClient } from '../utils/apiClient'
+import { apiClient, setMemoryAdminPin, getMemoryAdminPin } from '../utils/apiClient'
 
-/** Storage key for the customized administrator PIN */
-const ADMIN_PIN_KEY = 'mechanic_admin_pin'
-
-/** Storage key for the active admin session state */
+/** Storage key for the active admin session state in sessionStorage (never stores the PIN) */
 const ADMIN_SESSION_KEY = 'mechanic_is_admin'
 
-/** Default fallback PIN when none is configured in localStorage */
-const DEFAULT_PIN = '1234'
+// Limpieza de seguridad preventiva: purgar cualquier credencial previa en localStorage
+try {
+  localStorage.removeItem('mechanic_admin_pin')
+} catch {}
 
 /**
  * Shared reactive state indicating whether administrator mode is currently active.
- * Restored from localStorage on initialization to maintain session across refreshes.
+ * Restored from sessionStorage on initialization for the current browser tab only.
  * @type {import('vue').Ref<boolean>}
  */
-const isAdmin = ref(localStorage.getItem(ADMIN_SESSION_KEY) === 'true')
-
-/**
- * Automatically reconciles client-side customized PIN with backend storage upon loading.
- * Ensures the backend acknowledges custom PINs established across sessions.
- */
-async function syncWithBackend() {
-  const localPin = localStorage.getItem(ADMIN_PIN_KEY)
-  if (localPin && localPin !== DEFAULT_PIN) {
-    try {
-      await apiClient.post('/admin/pin/sync', { pin: localPin })
-    } catch {
-      // Non-blocking background sync
-    }
-  }
-}
-
-// Trigger reconciliation on module initialization
-syncWithBackend()
+const isAdmin = ref(
+  (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') ||
+  (typeof localStorage !== 'undefined' && localStorage.getItem(ADMIN_SESSION_KEY) === 'true')
+)
 
 /**
  * Composable for managing user roles, PIN authorization, and administrator sessions.
  * 
  * @returns {Object} Authentication controls and reactive state
- * @property {import('vue').Ref<boolean>} isAdmin - Whether admin privileges are active
- * @property {function(string): boolean} verifyPin - Validates a given PIN against the stored PIN
- * @property {function(string): boolean} loginAdmin - Authenticates and activates admin mode
- * @property {function(): void} logoutAdmin - Deactivates admin mode and clears session
- * @property {function(string, string): Promise<boolean>} updatePin - Changes the admin PIN on server and client
- * @property {string} defaultPin - The initial system PIN (1234)
  */
 export function useAuth() {
   /**
-   * Retrieves the current administrator PIN from persistent storage.
-   * @private
-   * @returns {string} The active PIN
-   */
-  function getAdminPin() {
-    return localStorage.getItem(ADMIN_PIN_KEY) || DEFAULT_PIN
-  }
-
-  /**
-   * Validates whether an input PIN matches the stored administrator PIN.
+   * Validates whether an input PIN matches the server administrator hash.
+   * Performs an asynchronous verification against the backend API.
    * 
    * @param {string|number} inputPin - PIN entered by the user
-   * @returns {boolean} True if the PIN is valid and matches
+   * @returns {Promise<boolean>} True if valid and verified by server
    */
-  function verifyPin(inputPin) {
+  async function verifyPin(inputPin) {
     if (!inputPin) return false
-    return String(inputPin).trim() === getAdminPin()
+    try {
+      const res = await apiClient.post('/admin/pin/verify', {
+        pin: String(inputPin).trim()
+      })
+      return !!(res && res.valid)
+    } catch {
+      return false
+    }
   }
 
   /**
    * Attempts to activate Administrator mode using the provided PIN.
-   * Persists the session flag in localStorage upon success.
+   * On success, keeps the verified PIN exclusively in volatile memory (RAM)
+   * and marks the session flag. Never writes the PIN to localStorage.
    * 
    * @param {string|number} inputPin - PIN to authenticate
-   * @returns {boolean} True if login was successful, false otherwise
+   * @returns {Promise<boolean>} True if login was successful
    */
-  function loginAdmin(inputPin) {
-    if (verifyPin(inputPin)) {
+  async function loginAdmin(inputPin) {
+    const cleanPin = String(inputPin || '').trim()
+    const isValid = await verifyPin(cleanPin)
+    if (isValid) {
       isAdmin.value = true
-      localStorage.setItem(ADMIN_SESSION_KEY, 'true')
+      setMemoryAdminPin(cleanPin)
+      try {
+        sessionStorage.setItem(ADMIN_SESSION_KEY, 'true')
+      } catch {}
       return true
     }
     return false
@@ -92,30 +76,34 @@ export function useAuth() {
 
   /**
    * Terminates the current Administrator session, returning to standard Operator mode.
+   * Immediately wipes the volatile PIN from memory.
    */
   function logoutAdmin() {
     isAdmin.value = false
-    localStorage.removeItem(ADMIN_SESSION_KEY)
+    setMemoryAdminPin(null)
+    try {
+      sessionStorage.removeItem(ADMIN_SESSION_KEY)
+      localStorage.removeItem(ADMIN_SESSION_KEY)
+      localStorage.removeItem('mechanic_admin_pin')
+    } catch {}
   }
 
   /**
-   * Updates the Administrator PIN on both backend server storage and client localStorage.
+   * Updates the Administrator PIN directly on the backend server.
+   * Never persists the PIN in client localStorage.
    * 
    * @param {string|number} currentPin - The current active PIN for verification
    * @param {string|number} newPin - The new PIN (minimum 4 characters)
    * @returns {Promise<boolean>} True if updated successfully
-   * @throws {Error} If current PIN is invalid or backend communication fails
+   * @throws {Error} If current PIN is invalid or backend rejects update
    */
   async function updatePin(currentPin, newPin) {
-    if (!verifyPin(currentPin)) {
-      throw new Error('El PIN actual es incorrecto.')
-    }
-    if (!newPin || String(newPin).trim().length < 4) {
+    const cleanCurrent = String(currentPin || '').trim()
+    const cleanNew = String(newPin || '').trim()
+
+    if (!cleanNew || cleanNew.length < 4) {
       throw new Error('El nuevo PIN debe tener al menos 4 dígitos.')
     }
-
-    const cleanCurrent = String(currentPin).trim()
-    const cleanNew = String(newPin).trim()
 
     // Synchronize credential rotation with the backend REST API
     await apiClient.post('/admin/pin/change', {
@@ -123,7 +111,11 @@ export function useAuth() {
       new_pin: cleanNew,
     })
 
-    localStorage.setItem(ADMIN_PIN_KEY, cleanNew)
+    // If currently logged in as admin, update in-memory volatile session PIN
+    if (isAdmin.value) {
+      setMemoryAdminPin(cleanNew)
+    }
+
     return true
   }
 
@@ -133,7 +125,6 @@ export function useAuth() {
     loginAdmin,
     logoutAdmin,
     updatePin,
-    syncWithBackend,
-    defaultPin: DEFAULT_PIN,
+    getMemoryAdminPin,
   }
 }

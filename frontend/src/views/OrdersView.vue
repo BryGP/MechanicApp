@@ -270,10 +270,15 @@
                   v-model.number="item.qty"
                   type="number"
                   min="1"
+                  :max="getItemMaxStock(item)"
                   class="form-input text-center order-qty-input"
+                  :class="{ 'input-has-error': isItemOverStock(item) }"
                   placeholder="Cant."
                   title="Cantidad"
                 />
+                <span v-if="isItemOverStock(item)" class="item-stock-warning" :title="'Solo hay ' + getProductStock(item) + ' pzas disponibles en almacén'">
+                  Máx: {{ getProductStock(item) }}
+                </span>
               </div>
 
               <div class="item-subtotal-wrap">
@@ -683,6 +688,40 @@ function removeItem(idx) {
 }
 
 /**
+ * Gets the maximum allowable quantity based on available physical stock.
+ * Returns undefined for labor services (is_service = 1).
+ * @param {Object} item - Form line item
+ * @returns {number|undefined} Available physical stock limit
+ */
+function getItemMaxStock(item) {
+  if (!item.product_id) return undefined
+  const p = store.products.find(x => x.id === item.product_id)
+  return p && !p.is_service ? Math.max(0, p.stock) : undefined
+}
+
+/**
+ * Checks if the requested item quantity exceeds physical warehouse inventory.
+ * @param {Object} item - Form line item
+ * @returns {boolean} True if quantity exceeds stock
+ */
+function isItemOverStock(item) {
+  if (!item.product_id || !item.qty) return false
+  const p = store.products.find(x => x.id === item.product_id)
+  return !!(p && !p.is_service && item.qty > p.stock)
+}
+
+/**
+ * Returns the current available stock for the product selected in a line item.
+ * @param {Object} item - Form line item
+ * @returns {number} Physical stock units
+ */
+function getProductStock(item) {
+  if (!item.product_id) return 0
+  const p = store.products.find(x => x.id === item.product_id)
+  return p ? Math.max(0, p.stock) : 0
+}
+
+/**
  * Validates and creates a new work order.
  */
 async function submitOrder() {
@@ -705,6 +744,19 @@ async function submitOrder() {
   const hasEmpty = form.value.items.some(i => !i.product_id)
   if (hasEmpty) {
     return toast.error('Selecciona una refacción o servicio válido en cada partida agregada.')
+  }
+
+  // Validación estricta de existencias físicas en almacén
+  const requestedTotals = {}
+  for (const item of valid) {
+    requestedTotals[item.product_id] = (requestedTotals[item.product_id] || 0) + (parseInt(item.qty, 10) || 0)
+  }
+  for (const [pid, totalQty] of Object.entries(requestedTotals)) {
+    const p = store.products.find(x => x.id === Number(pid))
+    if (p && !p.is_service && totalQty > p.stock) {
+      const disponible = Math.max(0, p.stock)
+      return toast.error(`Stock insuficiente para "${p.name}". Solicitaste ${totalQty} pzas en total pero solo hay ${disponible} disponibles en almacén.`)
+    }
   }
 
   creating.value = true
@@ -753,10 +805,11 @@ async function removeOrder(order) {
     warningText: 'Operación restringida de alto valor: La orden será eliminada del historial del taller y del registro operativo.'
   })
 
-  if (!confirmed) return
+  if (!confirmed || (typeof confirmed === 'object' && !confirmed.confirmed)) return
 
+  const pin = typeof confirmed === 'object' ? confirmed.pin : undefined
   try {
-    await store.deleteOrder(order.id)
+    await store.deleteOrder(order.id, pin)
     toast.success(`Orden #${order.id} eliminada exitosamente.`)
   } catch (e) {
     toast.error(e.message)
@@ -1372,6 +1425,20 @@ async function removeOrder(order) {
 .orders-card .table-pagination {
   margin-top: auto;
   flex-shrink: 0;
+}
+
+.item-stock-warning {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #ef4444;
+  text-align: center;
+  margin-top: 3px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 4px;
+  padding: 1px 4px;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {

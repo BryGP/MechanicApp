@@ -87,10 +87,9 @@ class AdminPinController extends Controller
         ]);
 
         $clientPin = trim((string) $request->input('pin'));
-        $currentServerPin = AdminPinService::getPin();
 
-        // If server is on default '1234' and client has a customized PIN, sync it
-        if ($currentServerPin === '1234' && $clientPin !== '1234') {
+        // Si el servidor aún tiene el PIN por defecto '1234' y el cliente provee uno personalizado, sincronizar
+        if (AdminPinService::verify('1234') && $clientPin !== '1234') {
             AdminPinService::setPin($clientPin);
             return response()->json([
                 'synced'  => true,

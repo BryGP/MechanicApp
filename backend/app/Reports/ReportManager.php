@@ -58,8 +58,8 @@ class ReportManager
         foreach ($files as $file) {
             $filename = $file->getFilenameWithoutExtension();
 
-            // Ignoramos el propio Manager para evitar autoreferencias
-            if ($filename === 'ReportManager') {
+            // Ignoramos el propio Manager y excepciones para evitar autoreferencias
+            if ($filename === 'ReportManager' || $filename === 'ReportNotFoundException') {
                 continue;
             }
 
@@ -91,7 +91,7 @@ class ReportManager
      *
      * @param  string  $id  Identificador único del reporte (ej. 'autos_varados')
      * @return array       Arreglo con metadatos, conteo de filas y resultados
-     * @throws \Exception  Si el reporte no existe o no se encuentra en el directorio
+     * @throws ReportNotFoundException Si el reporte no existe o no se encuentra en el directorio
      */
     public static function run(string $id): array
     {
@@ -100,7 +100,7 @@ class ReportManager
 
         foreach ($files as $file) {
             $filename = $file->getFilenameWithoutExtension();
-            if ($filename === 'ReportManager') continue;
+            if ($filename === 'ReportManager' || $filename === 'ReportNotFoundException') continue;
 
             $className = "App\\Reports\\{$filename}";
 
@@ -125,6 +125,6 @@ class ReportManager
             }
         }
 
-        throw new \Exception("Reporte con ID '{$id}' no fue encontrado en app/Reports.");
+        throw new ReportNotFoundException("Reporte con ID '{$id}' no fue encontrado en app/Reports.");
     }
 }

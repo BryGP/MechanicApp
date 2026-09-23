@@ -142,10 +142,22 @@ watch(isOpen, (newVal) => {
 /**
  * Validates PIN requirements (if active role is not admin) and executes confirmation callback.
  */
-function confirm() {
+async function confirm() {
+  let enteredPin = null
+
   // If item requires admin and user is not admin, verify PIN
   if (modalState.value.requiresAdmin && !isAdmin.value) {
-    if (!verifyPin(inputPin.value)) {
+    if (!inputPin.value) {
+      pinError.value = true
+      toast.error('Ingresa el PIN de Administrador para autorizar.')
+      nextTick(() => {
+        pinInputRef.value?.focus()
+      })
+      return
+    }
+
+    const isValid = await verifyPin(inputPin.value)
+    if (!isValid) {
       pinError.value = true
       inputPin.value = ''
       toast.error('PIN de Administrador incorrecto. Operación no autorizada.')
@@ -154,9 +166,14 @@ function confirm() {
       })
       return
     }
+
+    enteredPin = inputPin.value.trim()
   }
 
-  handleConfirm()
+  inputPin.value = ''
+  pinError.value = false
+
+  handleConfirm({ confirmed: true, pin: enteredPin })
 }
 
 /**

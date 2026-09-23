@@ -768,10 +768,11 @@ async function remove(e) {
     warningText: 'Operación financiera restringida: La eliminación de este gasto afectará los balances netos y el corte de caja del taller.'
   })
 
-  if (!confirmed) return
+  if (!confirmed || (typeof confirmed === 'object' && !confirmed.confirmed)) return
 
+  const pin = typeof confirmed === 'object' ? confirmed.pin : undefined
   try {
-    await store.deleteExpense(e.id)
+    await store.deleteExpense(e.id, pin)
     toast.success('Registro de egreso eliminado exitosamente.')
   } catch (err) {
     toast.error(err.message)

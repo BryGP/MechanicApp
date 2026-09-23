@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Reports\ReportManager;
+use App\Reports\ReportNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Throwable;
 
 /**
  * ============================================================================
@@ -27,9 +30,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
  *   Combina la plantilla Blade corporativa ('pdf.report') con los metadatos dinámicos
  *   del reporte (título, categoría, total de registros, fecha de generación), 
  *   entregando un archivo PDF descargable con nomenclatura estandarizada.
- * - Manejo Resiliente de Excepciones:
- *   Atrapa solicitudes de reportes inexistentes o errores de sintaxis devolviendo 
- *   códigos HTTP 404/500 estructurados en JSON.
+ * - Manejo Resiliente y Preciso de Excepciones:
+ *   Distingue con exactitud entre reportes inexistentes (HTTP 404) y fallos en 
+ *   la ejecución de la consulta SQL o del servidor (HTTP 500).
  *
  * ENDPOINTS ASOCIADOS (routes/api.php):
  * - GET /api/reports          -> index() (Catálogo de reportes)
@@ -65,6 +68,7 @@ class ReportController extends Controller
      * 
      * Ejecuta la consulta SQL pura optimizada en MySQL para el reporte solicitado, 
      * devolviendo metadatos del reporte, conteo de filas y el arreglo de resultados.
+     * Distingue entre reporte inexistente (HTTP 404) y fallos SQL/servidor (HTTP 500).
      *
      * @param  string  $id  Identificador único del reporte (ej. 'stock_critico')
      * @return \Illuminate\Http\JsonResponse
@@ -73,8 +77,17 @@ class ReportController extends Controller
     {
         try {
             return response()->json(ReportManager::run($id));
-        } catch (\Exception $e) {
+        } catch (ReportNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Error al ejecutar la consulta SQL del reporte.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        } catch (Throwable $e) {
+            return response()->json([
+                'message' => 'Error interno al procesar el reporte: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -88,9 +101,10 @@ class ReportController extends Controller
      * Ejecuta la consulta analítica, inyecta la información en la vista Blade 
      * de PDF ('resources/views/pdf/report.blade.php') y compila un archivo PDF en 
      * orientación horizontal (Landscape A4) con fecha/hora de emisión.
+     * Distingue entre reporte inexistente (HTTP 404) y fallos SQL/servidor (HTTP 500).
      *
      * @param  string  $id  Identificador del reporte a exportar
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @return \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\JsonResponse
      */
     public function pdf(string $id)
     {
@@ -107,8 +121,17 @@ class ReportController extends Controller
             $filename = 'reporte_' . $id . '_' . now()->format('Ymd_Hi') . '.pdf';
 
             return $pdf->download($filename);
-        } catch (\Exception $e) {
+        } catch (ReportNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Error al ejecutar la consulta SQL del reporte.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        } catch (Throwable $e) {
+            return response()->json([
+                'message' => 'Error interno al generar el PDF del reporte: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

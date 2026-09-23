@@ -9,18 +9,31 @@
 /** Base API URL configured via Vite environment variables */
 const BASE_URL = import.meta.env.VITE_API_URL
 
-/** Storage key for the customized administrator PIN */
-const ADMIN_PIN_KEY = 'mechanic_admin_pin'
-
-/** Default fallback PIN when none is configured in localStorage */
-const DEFAULT_PIN = '1234'
+// Limpieza de seguridad preventiva: purgar cualquier remanente de PIN en localStorage
+try {
+  localStorage.removeItem('mechanic_admin_pin')
+} catch {}
 
 /**
- * Retrieves the currently configured administrator PIN from local storage.
- * @returns {string} The active administrator PIN
+ * PIN de Administrador volátil en memoria (RAM).
+ * NUNCA se persiste en localStorage ni en disco para evitar filtraciones de credenciales.
  */
-function getActiveAdminPin() {
-  return localStorage.getItem(ADMIN_PIN_KEY) || DEFAULT_PIN
+let volatileAdminPin = null
+
+/**
+ * Registra o limpia el PIN de administrador en la memoria volátil de la sesión.
+ * @param {string|null} pin
+ */
+export function setMemoryAdminPin(pin) {
+  volatileAdminPin = pin ? String(pin).trim() : null
+}
+
+/**
+ * Obtiene el PIN de administrador activo en memoria volátil si existe.
+ * @returns {string|null}
+ */
+export function getMemoryAdminPin() {
+  return volatileAdminPin
 }
 
 /**
@@ -35,10 +48,12 @@ function getActiveAdminPin() {
 async function request(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
 
+  const adminPinHeader = options.adminPin || options.headers?.['X-Admin-Pin'] || volatileAdminPin
+
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'X-Admin-Pin': options.adminPin || getActiveAdminPin(),
+    ...(adminPinHeader ? { 'X-Admin-Pin': adminPinHeader } : {}),
     ...(options.headers || {}),
   }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Order;
+use App\Models\Product;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -84,6 +85,34 @@ class StoreOrderRequest extends FormRequest
                         'duplicate',
                         'Ya se registró una orden con este mismo cliente y vehículo hace unos momentos.'
                     );
+                }
+            }
+
+            // Validación estricta de stock físico disponible en almacén
+            $items = $this->input('items', []);
+            if (is_array($items)) {
+                $requestedQuantities = [];
+                foreach ($items as $it) {
+                    if (!empty($it['product_id']) && !empty($it['qty'])) {
+                        $pid = (int) $it['product_id'];
+                        $requestedQuantities[$pid] = ($requestedQuantities[$pid] ?? 0) + (int) $it['qty'];
+                    }
+                }
+
+                if (!empty($requestedQuantities)) {
+                    $products = Product::whereIn('id', array_keys($requestedQuantities))->get()->keyBy('id');
+                    foreach ($requestedQuantities as $pid => $totalQty) {
+                        $product = $products->get($pid);
+                        if ($product && empty($product->is_service)) {
+                            if ($totalQty > $product->stock) {
+                                $disponible = max(0, (int) $product->stock);
+                                $validator->errors()->add(
+                                    'items',
+                                    "Stock insuficiente para \"{$product->name}\" (SKU: {$product->sku}). Solicitaste {$totalQty} pzas, pero solo hay {$disponible} disponibles en almacén."
+                                );
+                            }
+                        }
+                    }
                 }
             }
         });

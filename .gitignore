@@ -9,9 +9,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+.vscode/
+
 
 # ---- envs
 .env

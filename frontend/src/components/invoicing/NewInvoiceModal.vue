@@ -464,34 +464,98 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Electronic Invoicing (CFDI 4.0) Issuance & PAC Stamping Modal
+ * @module components/invoicing/NewInvoiceModal
+ * @description Provides an interactive wizard for issuing Mexican fiscal CFDI 4.0 invoices:
+ * - Two issuance modalities: Linking an existing Workshop Work Order or Custom Line Item.
+ * - Anti-duplicate invoice validation preventing double billing on previously invoiced orders.
+ * - Interactive keyboard-accessible search dropdown for quick order and catalog lookup.
+ * - Real-time RFC formatting, regex verification, and "Público General" (XAXX010101000) quick-fill.
+ * - Real-time SAT tax engine breakdown calculating IVA-included subtotal, transferred tax, and total.
+ * - Preloads official SAT fiscal catalogs (Regímenes Fiscales, Usos de CFDI, Formas y Métodos de Pago).
+ * - Direct asynchronous submission to PAC certification endpoint with comprehensive error handling.
+ */
+
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import Modal from '../ui/Modal.vue'
 import apiClient from '../../utils/apiClient'
 import { formatCurrency } from '../../utils/format'
 
+/**
+ * Component Props
+ * @property {boolean} show - Controls dialog visibility
+ * @property {Array<Object>} availableOrders - Collection of repair orders available for invoice linking
+ */
 const props = defineProps({
   show: { type: Boolean, default: false },
   availableOrders: { type: Array, default: () => [] },
 })
 
+/**
+ * Component Emits
+ * @fires close - Dispatched when the user closes or cancels the modal
+ * @fires created - Dispatched when the invoice is stamped by PAC, providing the new invoice data
+ */
 const emit = defineEmits(['close', 'created'])
 
+// =============================================================================
+// MODAL WORKFLOW & FORM MODE
+// =============================================================================
+
+/** Active issuance modality: 'order' (linked work order) or 'manual' (ad-hoc service) */
 const mode = ref('order')
+
+/** Indicates whether the PAC stamping network request is currently in-flight */
 const submitting = ref(false)
+
+/** Flash error message returned from PAC or backend validation */
 const errorMessage = ref('')
 
-// Search states for Orders
+// =============================================================================
+// WORK ORDER SEARCH & AUTOCOMPLETE STATE
+// =============================================================================
+
+/** Text query for filtering available repair orders */
 const orderSearchTerm = ref('')
+
+/** Visibility of the order autocomplete dropdown menu */
 const orderDropdownOpen = ref(false)
+
+/** Keyboard highlighted index in the order dropdown list */
 const highlightedOrderIndex = ref(-1)
+
+/** DOM template reference to the order search wrapper for click-outside detection */
 const orderSearchContainerRef = ref(null)
+
+/** DOM template reference to the order search input element */
 const orderSearchInputRef = ref(null)
 
-// Catalog products for manual mode
+// =============================================================================
+// CATALOG & PRODUCT SEARCH STATE (MANUAL MODE)
+// =============================================================================
+
+/** Catalog products and services available for manual line items */
 const catalogProducts = ref([])
+
+/** Visibility of the manual concept product catalog dropdown */
 const productDropdownOpen = ref(false)
+
+/** DOM template reference to the product search container */
 const productSearchContainerRef = ref(null)
 
+// =============================================================================
+// SAT FISCAL CATALOGS & FORM MODEL
+// =============================================================================
+
+/**
+ * Official SAT Catalogs fetched from the backend API.
+ * @type {Object}
+ * @property {Array<Object>} regimenes_fiscales - SAT Tax Regimes (c_RegimenFiscal)
+ * @property {Array<Object>} usos_cfdi - SAT CFDI Usages (c_UsoCFDI)
+ * @property {Array<Object>} formas_pago - SAT Payment Forms (c_FormaPago)
+ * @property {Array<Object>} metodos_pago - SAT Payment Methods (c_MetodoPago)
+ */
 const catalogs = reactive({
   regimenes_fiscales: [],
   usos_cfdi: [],
@@ -499,6 +563,10 @@ const catalogs = reactive({
   metodos_pago: [],
 })
 
+/**
+ * Main form payload for CFDI 4.0 issuance.
+ * @type {Object}
+ */
 const form = reactive({
   order_id: null,
   rfc_receptor: '',
@@ -515,19 +583,37 @@ const form = reactive({
   },
 })
 
-// Official SAT RFC Regex pattern
+/**
+ * Official SAT RFC Regular Expression Pattern (supports both Persona Física 13 chars and Moral 12 chars).
+ * @constant {RegExp}
+ */
 const RFC_REGEX = /^([A-ZÑ&]{3,4})(\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01]))([A-Z\d]{2}[A\d])$/i
 
+// =============================================================================
+// COMPUTED VALIDATIONS & DERIVED DATA
+// =============================================================================
+
+/**
+ * Checks whether the receptor RFC string satisfies the official SAT syntax.
+ * @type {import('vue').ComputedRef<boolean>}
+ */
 const isRfcValid = computed(() => {
   return RFC_REGEX.test(form.rfc_receptor.trim())
 })
 
+/**
+ * Currently selected order entity based on form.order_id.
+ * @type {import('vue').ComputedRef<Object|null>}
+ */
 const selectedOrder = computed(() => {
   if (!form.order_id) return null
   return props.availableOrders.find(o => o.id === form.order_id) || null
 })
 
-// Filtered orders for fast searching
+/**
+ * Fast multi-attribute filtering of customer orders by ID, client, vehicle, or notes.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredOrders = computed(() => {
   const list = props.availableOrders || []
   const q = orderSearchTerm.value.trim().toLowerCase()
@@ -544,7 +630,10 @@ const filteredOrders = computed(() => {
   }).slice(0, 20)
 })
 
-// Filtered catalog products for manual mode
+/**
+ * Filtered catalog products matching current manual concept description or SKU.
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredCatalogProducts = computed(() => {
   const q = form.custom_concept.descripcion ? form.custom_concept.descripcion.trim().toLowerCase() : ''
   if (!q) return catalogProducts.value.slice(0, 8)
@@ -553,7 +642,10 @@ const filteredCatalogProducts = computed(() => {
   }).slice(0, 10)
 })
 
-// Financial calculations
+/**
+ * Net taxable subtotal derived from the gross price with IVA included (price / 1.16).
+ * @type {import('vue').ComputedRef<number>}
+ */
 const calculatedSubtotal = computed(() => {
   if (mode.value === 'order' && selectedOrder.value) {
     return Math.round((selectedOrder.value.total / 1.16) * 100) / 100
@@ -564,14 +656,27 @@ const calculatedSubtotal = computed(() => {
   return 0
 })
 
+/**
+ * Transferred 16% IVA calculated from the net taxable subtotal (subtotal * 0.16).
+ * @type {import('vue').ComputedRef<number>}
+ */
 const calculatedIva = computed(() => {
   return Math.round(calculatedSubtotal.value * 0.16 * 100) / 100
 })
 
+/**
+ * Total fiscal invoice amount in MXN (subtotal + IVA).
+ * @type {import('vue').ComputedRef<number>}
+ */
 const calculatedTotal = computed(() => {
   return Math.round((calculatedSubtotal.value + calculatedIva.value) * 100) / 100
 })
 
+/**
+ * Explanatory validation hint guiding the user on missing or invalid requirements.
+ * Returns null if all SAT fiscal validations pass cleanly.
+ * @type {import('vue').ComputedRef<string|null>}
+ */
 const validationHint = computed(() => {
   if (mode.value === 'order' && !form.order_id) {
     return 'Busca y selecciona una orden de trabajo para facturar.'
@@ -604,10 +709,23 @@ const validationHint = computed(() => {
   return null
 })
 
+/**
+ * Determines whether the invoice can be submitted for PAC stamping.
+ * @type {import('vue').ComputedRef<boolean>}
+ */
 const canSubmit = computed(() => {
   return validationHint.value === null
 })
 
+// =============================================================================
+// COMPONENT ACTIONS & HANDLERS
+// =============================================================================
+
+/**
+ * Returns a human-readable label in Spanish for a given work order status code.
+ * @param {string} status - Internal order status ('open'|'in_progress'|'done'|'delivered')
+ * @returns {string} Localized status label
+ */
 function formatOrderStatus(status) {
   const map = {
     open: 'Abierta',
@@ -618,6 +736,10 @@ function formatOrderStatus(status) {
   return map[status] || status || 'Registrada'
 }
 
+/**
+ * Assigns the selected order to the form model and populates recipient defaults.
+ * @param {Object} ord - Work order entity
+ */
 function selectOrder(ord) {
   form.order_id = ord.id
   orderDropdownOpen.value = false
@@ -625,6 +747,9 @@ function selectOrder(ord) {
   onOrderSelect()
 }
 
+/**
+ * Clears current order selection and refocuses search input.
+ */
 function clearSelectedOrder() {
   form.order_id = null
   orderSearchTerm.value = ''
@@ -634,6 +759,10 @@ function clearSelectedOrder() {
   })
 }
 
+/**
+ * Navigates order autocomplete dropdown with keyboard up/down arrows.
+ * @param {number} direction - 1 for down, -1 for up
+ */
 function navigateOrderResults(direction) {
   if (!orderDropdownOpen.value) {
     orderDropdownOpen.value = true
@@ -644,6 +773,9 @@ function navigateOrderResults(direction) {
   highlightedOrderIndex.value = (highlightedOrderIndex.value + direction + count) % count
 }
 
+/**
+ * Selects currently keyboard-highlighted order on Enter key press.
+ */
 function selectHighlightedOrder() {
   if (highlightedOrderIndex.value >= 0 && highlightedOrderIndex.value < filteredOrders.value.length) {
     selectOrder(filteredOrders.value[highlightedOrderIndex.value])
@@ -652,12 +784,19 @@ function selectHighlightedOrder() {
   }
 }
 
+/**
+ * Populates manual concept fields with data from selected product catalog item.
+ * @param {Object} prod - Product catalog entity
+ */
 function selectCatalogProduct(prod) {
   form.custom_concept.descripcion = prod.name
   form.custom_concept.valor_unitario = parseFloat(prod.price || 0)
   productDropdownOpen.value = false
 }
 
+/**
+ * Populates customer name as uppercase business name when order is picked.
+ */
 function onOrderSelect() {
   if (selectedOrder.value) {
     if (!form.razon_social_receptor || form.razon_social_receptor === 'PUBLICO EN GENERAL') {
@@ -666,6 +805,10 @@ function onOrderSelect() {
   }
 }
 
+/**
+ * Quick-fill preset for generic customer sales ("Público en General" CFDI 4.0).
+ * Conforms to SAT official guidelines (RFC: XAXX010101000, Regimen: 616, Uso: S01).
+ */
 function fillPublicoGeneral() {
   form.rfc_receptor = 'XAXX010101000'
   form.razon_social_receptor = 'PUBLICO EN GENERAL'
@@ -674,6 +817,10 @@ function fillPublicoGeneral() {
   form.codigo_postal_receptor = '06000'
 }
 
+/**
+ * Loads official SAT fiscal catalogs from the backend endpoint.
+ * @returns {Promise<void>}
+ */
 async function loadCatalogs() {
   try {
     const res = await apiClient.get('/invoices/catalogs')
@@ -688,6 +835,10 @@ async function loadCatalogs() {
   }
 }
 
+/**
+ * Loads workshop products and services catalog for manual concept selection.
+ * @returns {Promise<void>}
+ */
 async function loadProducts() {
   try {
     const res = await apiClient.get('/products')
@@ -699,6 +850,10 @@ async function loadProducts() {
   }
 }
 
+/**
+ * Global document click listener for dismissing autocomplete dropdowns on outside click.
+ * @param {MouseEvent} e - Mouse click event
+ */
 function handleDocumentClick(e) {
   if (orderSearchContainerRef.value && !orderSearchContainerRef.value.contains(e.target)) {
     orderDropdownOpen.value = false
@@ -708,6 +863,10 @@ function handleDocumentClick(e) {
   }
 }
 
+/**
+ * Submits the CFDI 4.0 issuance payload to the backend for certified PAC stamping.
+ * @returns {Promise<void>}
+ */
 async function handleSubmit() {
   if (!canSubmit.value) return
   submitting.value = true
@@ -735,18 +894,27 @@ async function handleSubmit() {
   }
 }
 
+/**
+ * Lifecycle hook: preloads catalogs, products, and attaches document click listener.
+ */
 onMounted(() => {
   loadCatalogs()
   loadProducts()
   document.addEventListener('click', handleDocumentClick)
 })
 
+/**
+ * Lifecycle hook: cleans up document click listener.
+ */
 onUnmounted(() => {
   document.removeEventListener('click', handleDocumentClick)
 })
 </script>
 
 <style scoped>
+/* ========================================================================= */
+/* 1. Modal Custom Header & Base Shell Layout                               */
+/* ========================================================================= */
 .modal-custom-header {
   display: flex;
   align-items: center;
@@ -786,6 +954,9 @@ onUnmounted(() => {
   padding: 1.4rem 1.75rem;
 }
 
+/* ========================================================================= */
+/* 2. Step Form Panels & Mode Selector (Order vs Manual)                     */
+/* ========================================================================= */
 .form-panel {
   background: rgba(15, 23, 42, 0.45);
   border: 1px solid var(--border);

@@ -997,6 +997,14 @@ p {
 
 /* ==============================================================================
    16. PRINT ENGINE & CFDI SAT PRINT ISOLATION
+   ==============================================================================
+   This section isolates printable documents (such as SAT CFDI 4.0 tax invoices
+   and work order tickets) from the Single Page Application (SPA) shell:
+   - Sets standard Letter portrait paper geometry with 8mm margins.
+   - Enforces exact print color reproduction for official QR codes and badges.
+   - Suppresses the entire #app viewport tree to prevent background page bleed.
+   - Flattens fixed modal containers, removes dark backdrop blurs and drop shadows,
+     allowing pure document printing directly from the active modal view.
    ============================================================================== */
 @media print {
   @page {

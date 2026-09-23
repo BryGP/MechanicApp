@@ -57,7 +57,7 @@
  * @fileoverview Main Navigation Sidebar Component
  * @module components/layout/Sidebar
  * @description Renders the application's collapsible sidebar navigation menu,
- * workshop brand identity, and links to Dashboard, Products, Orders, Accounting, and Reports.
+ * workshop brand identity, and links to Dashboard, Products, Orders, Accounting, Reports, and Facturación (CFDI 4.0).
  */
 
 /**

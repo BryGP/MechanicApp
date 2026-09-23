@@ -271,20 +271,61 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview SAT CFDI 4.0 Printable Representation & Fiscal Inspection Modal
+ * @module components/invoicing/InvoiceDetailModal
+ * @description Renders the official printed representation (Representación Impresa)
+ * of a Mexican CFDI version 4.0 digital tax voucher:
+ * - Complete issuer & receptor fiscal tax profiles (RFC, Razón Social, C.P., Régimen Fiscal, Uso CFDI).
+ * - Itemized line items table with automatic SAT ClaveProdServ classification (Labor vs Parts).
+ * - Real-time reverse VAT decomposition (price / 1.16) for tax-included pricing compliance.
+ * - Dynamic generation of official SAT verification 2D QR Code.
+ * - Display of SAT Digital Stamp (Sello SAT), Issuer Stamp, and Digital Certification Chain.
+ * - Number-to-words currency translator converting totals into formal Spanish legal phrasing.
+ * - Print isolation engine ensuring exact Letter/A4 output without modal backdrops or application headers.
+ */
+
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import QRCode from 'qrcode'
 import { formatMoney } from '../../utils/format'
 
+/**
+ * Component Props
+ * @property {boolean} show - Controls visibility of the modal dialog
+ * @property {Object|null} invoice - Full invoice entity including UUID, SAT stamps, order items, and receptor profile
+ */
 const props = defineProps({
   show: { type: Boolean, default: false },
   invoice: { type: Object, default: null },
 })
 
+/**
+ * Component Emits
+ * @fires close - Dispatched when the user dismisses the inspection modal
+ * @fires cancelled - Dispatched when user clicks Cancelar Factura to prompt PIN revocation
+ */
 const emit = defineEmits(['close', 'cancelled'])
 
+// =============================================================================
+// REACTIVE REFS & DOM BINDINGS
+// =============================================================================
+
+/** DOM template canvas reference where the SAT QR code is drawn */
 const qrCanvas = ref(null)
+
+/** Temporary boolean flag indicating the UUID was copied to the clipboard */
 const copied = ref(false)
 
+// =============================================================================
+// CFDI 4.0 LINE ITEM TAX & CLASSIFICATION CALCULATORS
+// =============================================================================
+
+/**
+ * Determines whether a line item corresponds to labor/service or physical auto part.
+ * Used to assign official SAT ClaveProdServ (78181500 for services, 01010101 for parts).
+ * @param {Object} item - Order or invoice line item
+ * @returns {boolean} True if item is a labor service, false if physical spare part
+ */
 function isLabor(item) {
   if (item.product && typeof item.product.is_service === 'boolean') {
     return item.product.is_service
@@ -293,23 +334,46 @@ function isLabor(item) {
   return name.includes('mano') || name.includes('servicio') || name.includes('diagnostico') || name.includes('protocolo') || name.includes('mantenimiento') || name.includes('purga') || name.includes('alineacion') || name.includes('cambio y purgado')
 }
 
+/**
+ * Computes the net taxable subtotal (without 16% IVA) from gross price where IVA is already included.
+ * Formula: (unit_price * quantity) / 1.16 rounded to 2 decimal places.
+ * @param {Object} item - Line item with unit_price and quantity
+ * @returns {number} Net taxable amount in MXN
+ */
 function getItemSubtotalWithoutIva(item) {
   const net = (item.unit_price || 0) * (item.quantity || 1)
   return Math.round((net / 1.16) * 100) / 100
 }
 
+/**
+ * Calculates the transferred 16% IVA portion for a line item where price is IVA-inclusive.
+ * Formula: gross_total - net_subtotal.
+ * @param {Object} item - Line item with unit_price and quantity
+ * @returns {number} 16% IVA amount in MXN
+ */
 function getItemIva(item) {
   const net = (item.unit_price || 0) * (item.quantity || 1)
   const sub = getItemSubtotalWithoutIva(item)
   return Math.round((net - sub) * 100) / 100
 }
 
+/**
+ * Calculates the net unit price without IVA for CFDI XML ValorUnitario field.
+ * Formula: net_subtotal / quantity.
+ * @param {Object} item - Line item with unit_price and quantity
+ * @returns {number} Net unit price in MXN
+ */
 function getItemUnitPriceWithoutIva(item) {
   const sub = getItemSubtotalWithoutIva(item)
   const qty = item.quantity || 1
   return Math.round((sub / qty) * 100) / 100
 }
 
+/**
+ * Formats an ISO datetime string into Mexican localized date representation.
+ * @param {string} dateStr - ISO datetime string
+ * @returns {string} Localized formatted date (DD/MM/YYYY, HH:MM:SS)
+ */
 function formatDate(dateStr) {
   if (!dateStr) return '-'
   const d = new Date(dateStr)
@@ -323,6 +387,10 @@ function formatDate(dateStr) {
   })
 }
 
+/**
+ * Renders the official SAT verification 2D QR code onto the canvas element.
+ * Follows SAT technical annex requirements with UUID verification URL.
+ */
 function renderQr() {
   if (!qrCanvas.value || !props.invoice) return
   const url = props.invoice.qr_code_url || `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${props.invoice.uuid}`
@@ -335,6 +403,7 @@ function renderQr() {
   })
 }
 
+// Watchers to trigger QR rendering when modal opens or invoice switches
 watch(() => props.show, async (newVal) => {
   if (newVal) {
     await nextTick()
@@ -349,6 +418,13 @@ watch(() => props.invoice, async () => {
   }
 })
 
+// =============================================================================
+// DOCUMENT UTILITIES & CLIPBOARD HANDLERS
+// =============================================================================
+
+/**
+ * Copies the 36-character SAT Fiscal UUID to the clipboard.
+ */
 function copyUuid() {
   if (!props.invoice) return
   navigator.clipboard.writeText(props.invoice.uuid)
@@ -356,12 +432,18 @@ function copyUuid() {
   setTimeout(() => { copied.value = false }, 2000)
 }
 
+/**
+ * Initiates direct download of the official certified SAT XML voucher document.
+ */
 function downloadXml() {
   if (!props.invoice) return
   const url = `${import.meta.env.VITE_API_URL}/invoices/${props.invoice.id}/xml`
   window.open(url, '_blank')
 }
 
+/**
+ * Triggers native browser print dialog, applying print isolation styling classes.
+ */
 function printInvoice() {
   document.body.classList.add('is-printing-invoice')
   setTimeout(() => {
@@ -369,15 +451,25 @@ function printInvoice() {
   }, 60)
 }
 
+/**
+ * Browser event handler fired immediately before print dialog renders.
+ */
 function onBeforePrint() {
   if (props.show) {
     document.body.classList.add('is-printing-invoice')
   }
 }
 
+/**
+ * Browser event handler fired after print dialog closes, removing isolation classes.
+ */
 function onAfterPrint() {
   document.body.classList.remove('is-printing-invoice')
 }
+
+// =============================================================================
+// LIFECYCLE HOOKS
+// =============================================================================
 
 onMounted(() => {
   window.addEventListener('beforeprint', onBeforePrint)
@@ -396,15 +488,38 @@ watch(() => props.show, (newVal) => {
   }
 })
 
+/**
+ * Emits cancellation event to parent view to initiate Administrator PIN verification.
+ */
 function promptCancel() {
   emit('cancelled', props.invoice)
 }
 
+// =============================================================================
+// LEGAL SPANISH NUMBER-TO-WORDS TRANSLATION (SAT ANEXO 20 STANDARD)
+// =============================================================================
+
+/**
+ * Extracts 2-digit zero-padded centavos portion of a currency amount.
+ * @param {number} amount - Floating-point currency amount
+ * @returns {string} Two-digit zero-padded string (e.g., '00', '50')
+ */
 function getCents(amount) {
   const cents = Math.round((amount - Math.floor(amount)) * 100)
   return String(cents).padStart(2, '0')
 }
 
+/**
+ * Converts a floating-point numeric value into legal Spanish words for CFDI 4.0 representations.
+ * Handles millions, thousands, hundreds, tens, and units up to 999,999,999.
+ * 
+ * @example
+ * numberToWords(1500) // returns "MIL QUINIENTOS"
+ * numberToWords(2540.5) // returns "DOS MIL QUINIENTOS CUARENTA"
+ * 
+ * @param {number} num - Numeric amount
+ * @returns {string} Uppercase Spanish representation
+ */
 function numberToWords(num) {
   const integer = Math.floor(num)
   if (integer === 0) return 'CERO'
@@ -461,6 +576,9 @@ function numberToWords(num) {
 </script>
 
 <style scoped>
+/* ========================================================================= */
+/* 1. Modal Backdrop & Interactive Frame Layout                              */
+/* ========================================================================= */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -486,6 +604,9 @@ function numberToWords(num) {
   overflow: hidden;
 }
 
+/* ========================================================================= */
+/* 2. Interactive Modal Header & Action Buttons                              */
+/* ========================================================================= */
 .modal-header {
   padding: 14px 20px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);

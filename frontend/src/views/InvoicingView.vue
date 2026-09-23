@@ -309,6 +309,17 @@
 </template>
 
 <script setup>
+/**
+ * @fileoverview Workshop Electronic Invoicing & SAT CFDI 4.0 Management View
+ * @module views/InvoicingView
+ * @description Manages Mexican fiscal CFDI 4.0 invoices for automotive repair orders:
+ * - Server-side paginated querying and listing of stamped tax vouchers.
+ * - Real-time filtering by SAT validity status (Vigente / Cancelada) and full-text search (Folio, UUID, RFC).
+ * - Monthly fiscal KPI metric cards (Total Invoiced, Active Invoices, Transferred 16% IVA, Cancelled Vouchers).
+ * - Modal workflows for CFDI 4.0 generation and detailed printable fiscal representation (PDF/Print engine).
+ * - Administrator PIN-protected tax cancellation directly against the SAT authority.
+ */
+
 import { ref, reactive, computed, onMounted } from 'vue'
 import apiClient from '../utils/apiClient'
 import { formatCurrency, formatDate } from '../utils/format'
@@ -317,15 +328,66 @@ import Modal from '../components/ui/Modal.vue'
 import NewInvoiceModal from '../components/invoicing/NewInvoiceModal.vue'
 import InvoiceDetailModal from '../components/invoicing/InvoiceDetailModal.vue'
 
+// =============================================================================
+// REACTIVE COMPONENT STATE
+// =============================================================================
+
+/**
+ * List of invoice records fetched from the backend API for the current page.
+ * @type {import('vue').Ref<Array<Object>>}
+ */
 const invoices = ref([])
+
+/**
+ * Available customer work orders eligible for linking to new fiscal invoices.
+ * @type {import('vue').Ref<Array<Object>>}
+ */
 const availableOrders = ref([])
+
+/**
+ * Indicates whether an asynchronous invoice query is currently in progress.
+ * @type {import('vue').Ref<boolean>}
+ */
 const loading = ref(false)
+
+/**
+ * Real-time search query string for filtering by Folio, UUID, or RFC.
+ * @type {import('vue').Ref<string>}
+ */
 const searchTerm = ref('')
+
+/**
+ * Active filter for SAT cancellation status ('vigente', 'cancelada', or empty string for all).
+ * @type {import('vue').Ref<string>}
+ */
 const statusFilter = ref('')
+
+/**
+ * User feedback flash toast message text.
+ * @type {import('vue').Ref<string>}
+ */
 const toastMessage = ref('')
+
+/**
+ * User feedback flash toast visual variant ('success' | 'error').
+ * @type {import('vue').Ref<'success'|'error'>}
+ */
 const toastType = ref('success')
 
+/**
+ * Number of invoice rows displayed per pagination page.
+ * @type {import('vue').Ref<number>}
+ */
 const perPage = ref(15)
+
+/**
+ * Server pagination metadata synchronized with API responses.
+ * @type {Object}
+ * @property {number} current_page - Current active page number
+ * @property {number} last_page - Total number of available pages
+ * @property {number} per_page - Number of records per page
+ * @property {number} total - Total records matching active criteria
+ */
 const meta = reactive({
   current_page: 1,
   last_page: 1,
@@ -333,6 +395,14 @@ const meta = reactive({
   total: 0,
 })
 
+/**
+ * Monthly aggregated fiscal metrics calculated by the backend for the active month.
+ * @type {Object}
+ * @property {number} total_invoiced_month - Total revenue invoiced in MXN
+ * @property {number} active_invoices_count - Count of active/valid vouchers
+ * @property {number} cancelled_invoices_count - Count of cancelled vouchers
+ * @property {number} total_iva_month - Total 16% transferred IVA collected
+ */
 const metrics = reactive({
   total_invoiced_month: 0,
   active_invoices_count: 0,
@@ -340,19 +410,49 @@ const metrics = reactive({
   total_iva_month: 0,
 })
 
-// Modals
+// =============================================================================
+// MODAL DIALOG STATE CONTROLLERS
+// =============================================================================
+
+/** Visibility state for the new invoice generation modal */
 const showNewModal = ref(false)
+
+/** Visibility state for the detailed fiscal voucher printable modal */
 const showDetailModal = ref(false)
+
+/** Currently inspected invoice record passed to the detail modal */
 const selectedInvoice = ref(null)
 
-// Cancellation with PIN
+// =============================================================================
+// SAT CANCELLATION STATE (PROTECTED BY ADMIN PIN)
+// =============================================================================
+
+/** Visibility state for the Administrator PIN cancellation confirmation prompt */
 const showCancelPrompt = ref(false)
+
+/** Target invoice selected for fiscal cancellation */
 const invoiceToCancel = ref(null)
+
+/** Official SAT cancellation motive code (01, 02, 03, or 04) */
 const cancelReason = ref('02')
+
+/** Administrator security PIN entered for authorization */
 const adminPinInput = ref('')
+
+/** Indicates whether cancellation network call is currently in-flight */
 const cancelling = ref(false)
+
+/** Validation or API error message encountered during cancellation */
 const cancelError = ref('')
 
+// =============================================================================
+// COMPUTED PROPERTIES
+// =============================================================================
+
+/**
+ * Sliding window of page numbers and ellipsis markers for the pagination toolbar.
+ * @type {import('vue').ComputedRef<Array<number|string>>}
+ */
 const visiblePages = computed(() => {
   const current = meta.current_page
   const total = meta.last_page
@@ -372,7 +472,16 @@ const visiblePages = computed(() => {
   return pages
 })
 
+// =============================================================================
+// COMPONENT METHODS & EVENT HANDLERS
+// =============================================================================
+
+/** Timer reference for search input debounce */
 let searchDebounceTimer = null
+
+/**
+ * Debounces search input changes by 300ms to reduce redundant API queries.
+ */
 function debouncedSearch() {
   clearTimeout(searchDebounceTimer)
   searchDebounceTimer = setTimeout(() => {
@@ -380,6 +489,11 @@ function debouncedSearch() {
   }, 300)
 }
 
+/**
+ * Displays an ephemeral feedback toast alert message.
+ * @param {string} message - Message text to present
+ * @param {'success'|'error'} [type='success'] - Visual color scheme variant
+ */
 function showToast(message, type = 'success') {
   toastMessage.value = message
   toastType.value = type
@@ -388,12 +502,21 @@ function showToast(message, type = 'success') {
   }, 4000)
 }
 
+/**
+ * Copies the provided string (e.g., Fiscal UUID or Folio) to the system clipboard.
+ * @param {string} text - Text to copy
+ */
 function copyText(text) {
   if (!text) return
   navigator.clipboard.writeText(text)
   showToast('Folio Fiscal UUID copiado al portapapeles.')
 }
 
+/**
+ * Fetches paginated invoices and aggregated monthly metrics from the backend API.
+ * @param {number} [page=1] - Target page index to retrieve
+ * @returns {Promise<void>}
+ */
 async function fetchInvoices(page = 1) {
   loading.value = true
   try {
@@ -420,15 +543,26 @@ async function fetchInvoices(page = 1) {
   }
 }
 
+/**
+ * Navigates to the designated page number within valid bounds.
+ * @param {number} page - Destination page number
+ */
 function goToPage(page) {
   if (page < 1 || page > meta.last_page) return
   fetchInvoices(page)
 }
 
+/**
+ * Resets pagination back to the first page when changing page size.
+ */
 function changePerPage() {
   fetchInvoices(1)
 }
 
+/**
+ * Fetches available workshop repair orders from the backend to populate the invoice picker.
+ * @returns {Promise<void>}
+ */
 async function fetchOrders() {
   try {
     const res = await apiClient.get('/orders')
@@ -436,15 +570,23 @@ async function fetchOrders() {
       availableOrders.value = res.data || res || []
     }
   } catch {
-    // Non-blocking
+    // Non-blocking fallback
   }
 }
 
+/**
+ * Opens the new CFDI 4.0 invoice generation modal and refreshes available orders.
+ */
 function openNewModal() {
   fetchOrders()
   showNewModal.value = true
 }
 
+/**
+ * Callback invoked when a new invoice is successfully created and stamped.
+ * Refreshes invoice list and automatically opens the printable detail representation.
+ * @param {Object} newInv - Freshly stamped CFDI invoice model
+ */
 function onInvoiceCreated(newInv) {
   showNewModal.value = false
   showToast('Factura CFDI 4.0 emitida y timbrada exitosamente.')
@@ -456,16 +598,28 @@ function onInvoiceCreated(newInv) {
   }
 }
 
+/**
+ * Opens the detailed printable voucher inspection modal for the selected invoice.
+ * @param {Object} inv - Target invoice entity
+ */
 function viewInvoice(inv) {
   selectedInvoice.value = inv
   showDetailModal.value = true
 }
 
+/**
+ * Opens a new browser tab to trigger the direct download of the certified SAT XML document.
+ * @param {Object} inv - Target invoice entity
+ */
 function downloadXml(inv) {
   const url = `${import.meta.env.VITE_API_URL}/invoices/${inv.id}/xml`
   window.open(url, '_blank')
 }
 
+/**
+ * Opens the Administrator PIN prompt to initiate a revocation request against the SAT.
+ * @param {Object} inv - Target invoice entity to cancel
+ */
 function openCancelModal(inv) {
   showDetailModal.value = false
   invoiceToCancel.value = inv
@@ -475,6 +629,10 @@ function openCancelModal(inv) {
   showCancelPrompt.value = true
 }
 
+/**
+ * Submits the fiscal cancellation request with Administrator PIN verification.
+ * @returns {Promise<void>}
+ */
 async function confirmCancel() {
   if (!invoiceToCancel.value || !adminPinInput.value) return
   cancelling.value = true
@@ -497,6 +655,9 @@ async function confirmCancel() {
   }
 }
 
+/**
+ * Initial lifecycle hook: fetches initial page of invoices and orders.
+ */
 onMounted(() => {
   fetchInvoices(1)
   fetchOrders()
@@ -504,7 +665,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Full-Height Layout: Expands table frame to fill entire viewport cleanly */
+/* ==============================================================================
+   1. FULL-HEIGHT LAYOUT & FLEX CONTAINER ARCHITECTURE
+   ============================================================================== */
 .invoicing-page {
   display: flex;
   flex-direction: column;
@@ -534,6 +697,9 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+/* ==============================================================================
+   2. FLASH TOAST NOTIFICATIONS & EMPTY STATES
+   ============================================================================== */
 .toast-alert {
   padding: 10px 16px;
   border-radius: var(--radius-sm);
@@ -581,6 +747,9 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
+/* ==============================================================================
+   3. TABLE TYPOGRAPHY, UUID & SAT STATUS BADGES
+   ============================================================================== */
 .folio-tag {
   font-family: monospace;
   font-weight: 700;
@@ -654,6 +823,9 @@ onMounted(() => {
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
+/* ==============================================================================
+   4. CANCELLATION DIALOG & PIN AUTHORIZATION BOX
+   ============================================================================== */
 .cancel-warning-box {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.25);

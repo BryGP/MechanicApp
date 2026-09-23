@@ -25,6 +25,10 @@ export function formatCurrency(val) {
   })
 }
 
+/**
+ * Functional alias for formatCurrency for monetary display compatibility.
+ * @type {typeof formatCurrency}
+ */
 export const formatMoney = formatCurrency
 
 /**
